@@ -2852,14 +2852,194 @@
       "revenue_path": "Realistic ceiling $100-300K ARR before Loop/AfterShip price-match; below target",
       "verdict": "REJECT",
       "is_top_pick": false
+    },
+    {
+      "id": "offline-clinical-decision-support-rural-healthcare",
+      "name": "Offline Clinical Decision Support for Rural Healthcare",
+      "pattern": "C",
+      "one_liner": "AI-powered offline diagnostics tool for internet-scarce rural clinics to enhance chronic disease management.",
+      "target_customer": "Rural healthcare providers",
+      "demand_signal": {
+        "score": 4,
+        "rationale": "Limited Reddit activity specific to rural clinical support despite broader rural and healthcare concerns."
+      },
+      "pain_severity": {
+        "score": 7,
+        "rationale": "Significant time investment in traditional chronic disease diagnosis; rural budget restrictions indicate high demand for efficiency."
+      },
+      "competitive_reality": {
+        "score": 6,
+        "rationale": "Dominated by cloud-based solutions, but offline niche could sidestep direct competition."
+      },
+      "composite": 5.4,
+      "gate": "Reject",
+      "feasibility": {
+        "technical_buildability": {
+          "score": 5,
+          "note": "Partially feasible with existing frameworks and open-source resources."
+        },
+        "data_feasibility": {
+          "score": 6,
+          "note": "Availability of data from existing healthcare databases or real-time offline processing."
+        },
+        "domain_knowledge_gap": {
+          "score": 7,
+          "note": "Requires some acquaintance with rural healthcare but AI specifics are accessible."
+        },
+        "sales_cycle": {
+          "score": 4,
+          "note": "Potentially drawn-out due to procurement cycles, hindered by resource sustainability."
+        },
+        "buyer_accessibility": {
+          "score": 4,
+          "note": "Direct access may be limited; alternative pathways such as partnerships or local agencies needed."
+        },
+        "decision_maker_clarity": {
+          "score": 5,
+          "note": "Decision processes can be convoluted with multiple stakeholders needing alignment."
+        },
+        "pricing_power": {
+          "score": 6,
+          "note": "Pricing is feasible if aligned with operational saving benefits and budget-friendly tiers."
+        },
+        "gross_margin": {
+          "score": 7,
+          "note": "Once integrated, minimal costs would apply assuming efficient deployment and tech utilization."
+        },
+        "operating_capital": {
+          "score": 5,
+          "note": "Initial costs may approach limits without further budgetary support or supplemental funding."
+        },
+        "liability": {
+          "score": 6,
+          "note": "Potential legal exposure from diagnostic tool inaccuracies, especially without a scalable backup measure."
+        },
+        "competitive_intensity": {
+          "score": 6,
+          "note": "Many established solutions, but offline focus is less crowded, presenting a launch angle."
+        },
+        "regulatory_drag": {
+          "score": 7,
+          "note": "Reduced data transmission concerns likely make regulatory interaction smoother."
+        },
+        "average": 5.8
+      },
+      "reddit_quotes": [
+        {
+          "quote": "Healthcare centers here are more like emergency response hubs rather than full-service hospitals.",
+          "source": "Reddit r/AskOldPeople",
+          "url": "https://www.reddit.com/r/AskOldPeople/comments/12rg0u6",
+          "upvotes": "142",
+          "year": "2023"
+        }
+      ],
+      "pain_quantification": {
+        "dollar_cost": {
+          "value": "Annual savings from automation could be significant given reduced labor costs.",
+          "source_url": "https://evidencemd.ai/share/MTg3MGFjMGQtYzlmNy00OTUxLTgzMmMtY2UyNjgyNDJjNTFh.U9fUmq6hHaUdPlwjLmlLygOHrIAJKArePtrm1_vaTxg"
+        },
+        "time_cost": {
+          "value": "Diagnoses may take multiple hours manually which AI could handle faster.",
+          "source_url": "https://aithor.com/essay-examples/the-role-of-pathology-symptoms-in-diagnosing-chronic-diseases"
+        },
+        "urgency_triggers": [
+          "Understaffing in rural settings",
+          "High demand for same-day results"
+        ],
+        "visceral_quote": {
+          "quote": "Manual diagnostics are laborious and stretch already limited healthcare resources.",
+          "source_url": "https://www.linkedin.com/pulse/budget-limits-heighten-need-efficient-clinical-chips"
+        }
+      },
+      "competitors": [
+        {
+          "name": "OpenEvidence",
+          "funding": "$5M",
+          "est_revenue": "Established, US-focused",
+          "pricing": "Variable, dependent on deployment scope",
+          "top_complaint": "Cloud dependency in limited-internet regions.",
+          "wedge": "Offers comprehensive cloud plus some basic offline support."
+        }
+      ],
+      "underserved_gap": "Lack of reliable offline solutions for real-time clinical decision support.",
+      "brutal_truths": {
+        "certain": [
+          "Wide variability in rural access to tech.",
+          "Scalable offline AI quite novel."
+        ],
+        "uncertain": [
+          "Adoption pace in clinics.",
+          "Governmental grants for tech deployment."
+        ],
+        "kills_it": [
+          "Unanticipated costs.",
+          "Regulatory pushback."
+        ],
+        "underestimated": [
+          "Innovation aligning with clinic budgets.",
+          "AI's localized processing ability."
+        ]
+      },
+      "validation_plan": [
+        {
+          "week": "1-2",
+          "action": "Interview rural healthcare practitioners on diagnostic challenges without internet."
+        },
+        {
+          "week": "3-4",
+          "action": "Create initial MVP for offline AI processing in labs."
+        },
+        {
+          "week": "5-6",
+          "action": "Trial MVP with selected rural clinics to gather feedback."
+        },
+        {
+          "week": "7",
+          "action": "Refine product offering based on trials, focus on usability, cost."
+        },
+        {
+          "week": "8",
+          "action": "Explore public health department partnerships for further network deployment."
+        }
+      ],
+      "first_5_conversations": [
+        {
+          "who": "Rural Health Clinic Managers",
+          "where_to_find": "AMA directory, local health networks."
+        },
+        {
+          "who": "State Health Departments",
+          "where_to_find": "Health.gov resources, networking events."
+        },
+        {
+          "who": "Clinical AI Developers",
+          "where_to_find": "LinkedIn healthcare AI groups, conferences."
+        },
+        {
+          "who": "Rural Tech Coordinators",
+          "where_to_find": "Local government offices, tech meetups."
+        },
+        {
+          "who": "Non-Profits in Healthcare",
+          "where_to_find": "Directories, local chapters, global networks."
+        }
+      ],
+      "kill_criteria": [
+        "Prohibitively high initial tech installation expenses.",
+        "Extensive clinician retraining requirements.",
+        "Failure to distinguish from existing basic health support offerings."
+      ],
+      "revenue_path": "Through initial low and scalable subscription fee model, and pursuing state-funded project grants.",
+      "verdict": "REJECT",
+      "is_top_pick": false
     }
   ],
   "top_pick_rationale": "SmallHOA OS wins for Vijay because it combines the clearest decision-maker (one volunteer treasurer), the lowest competitive intensity in the sub-200-door self-managed segment (PayHOA is the only dedicated player and has documented UX gaps), and the lowest data/integration burden — it's literally CRUD + Stripe + PDF + AI, his core stack. Buyers are reachable through r/HOA, Nextdoor, and CAI chapters without trade shows. The MSP and Remodeler ideas have larger TAM but face entrenched, well-funded incumbents (ScalePad, Buildertrend) likely to ship competing AI features within 18 months.",
   "research_summary": {
-    "candidates_evaluated": 13,
+    "candidates_evaluated": 14,
     "searches_run": "Framework-driven first pass — re-verify with live searches",
     "gate_passed": 12,
-    "gate_failed": 1
+    "gate_failed": 2
   }
 };
   // ===== UTILITIES =====
