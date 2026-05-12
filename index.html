@@ -1,0 +1,3221 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Opportunity Scout — Dashboard</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.0/dist/chart.umd.js" integrity="sha384-iU8HYtnGQ8Cy4zl7gbNMOhsDTTKX02BTXptVP/vqAWIaTfM7isw76iyZCsjL2eVi" crossorigin="anonymous"></script>
+<style>
+  :root { color-scheme: light; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+    color: #0f172a;
+    background: #f8fafc;
+    line-height: 1.5;
+    font-size: 14px;
+  }
+  .wrap { max-width: 1200px; margin: 0 auto; padding: 20px 24px 64px; }
+  header { margin-bottom: 18px; }
+  h1 { margin: 0 0 6px; font-size: 22px; font-weight: 700; letter-spacing: -0.01em; }
+  .sub { color: #64748b; font-size: 13px; }
+  .summary-row { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 12px; }
+  .stat { background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 8px 12px; font-size: 12px; color: #475569; }
+  .stat b { color: #0f172a; font-weight: 600; }
+  .caveat { background: #fef3c7; border: 1px solid #fcd34d; border-radius: 8px; padding: 10px 14px; margin-top: 12px; font-size: 12.5px; color: #78350f; }
+  .caveat b { color: #78350f; }
+
+  .tabs {
+    display: flex;
+    gap: 4px;
+    border-bottom: 1px solid #e2e8f0;
+    margin-top: 18px;
+  }
+  .tab-btn {
+    background: none;
+    border: none;
+    padding: 10px 16px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    color: #64748b;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -1px;
+  }
+  .tab-btn.active {
+    color: #0f172a;
+    border-bottom-color: #0f172a;
+  }
+  .tab-btn:hover { color: #0f172a; }
+
+  .tab-pane { display: none; padding-top: 18px; }
+  .tab-pane.active { display: block; }
+
+  /* TAB 1: ideas table */
+  .filters {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    align-items: center;
+    margin-bottom: 14px;
+  }
+  .filters input, .filters select {
+    padding: 7px 10px;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    font-size: 13px;
+    background: #fff;
+    color: #0f172a;
+  }
+  .filters label { font-size: 12px; color: #64748b; }
+  .ideas-table { width: 100%; border-collapse: collapse; background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden; }
+  .ideas-table th, .ideas-table td { padding: 10px 12px; text-align: left; border-bottom: 1px solid #e2e8f0; font-size: 13px; vertical-align: top; }
+  .ideas-table th { background: #f1f5f9; font-weight: 600; color: #475569; font-size: 12px; text-transform: uppercase; letter-spacing: 0.03em; cursor: pointer; user-select: none; }
+  .ideas-table th .arrow { color: #94a3b8; font-size: 10px; margin-left: 4px; }
+  .ideas-table tr:last-child td { border-bottom: none; }
+  .ideas-table tr:hover { background: #f8fafc; }
+  .idea-name { font-weight: 600; color: #0f172a; }
+  .idea-name .pattern { font-size: 11px; font-weight: 500; color: #64748b; background: #f1f5f9; padding: 1px 6px; border-radius: 4px; margin-left: 6px; vertical-align: middle; }
+  .one-liner { color: #64748b; font-size: 12.5px; margin-top: 3px; }
+  .score { font-weight: 600; }
+  .composite { font-size: 16px; font-weight: 700; }
+  .verdict {
+    display: inline-block;
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+  .verdict-strong { background: #dcfce7; color: #166534; }
+  .verdict-caveat { background: #fef3c7; color: #92400e; }
+  .verdict-reject { background: #fee2e2; color: #991b1b; }
+  .top-pick-flag { display: inline-block; background: #1e293b; color: #fde68a; font-size: 10px; padding: 2px 6px; border-radius: 4px; margin-left: 6px; vertical-align: middle; font-weight: 600; letter-spacing: 0.05em; }
+  .open-btn {
+    background: #0f172a;
+    color: #fff;
+    border: none;
+    padding: 6px 10px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 11.5px;
+    font-weight: 500;
+  }
+  .open-btn:hover { background: #334155; }
+
+  .top-pick-banner {
+    background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+    border: 1px solid #fcd34d;
+    border-radius: 8px;
+    padding: 14px 16px;
+    margin-bottom: 14px;
+    font-size: 13px;
+  }
+  .top-pick-banner b { color: #78350f; }
+
+  /* TAB 2: detail */
+  .picker-row {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 14px 16px;
+    margin-bottom: 16px;
+  }
+  .picker-row label { font-weight: 600; color: #0f172a; font-size: 13px; }
+  .picker-row select {
+    flex: 1;
+    padding: 8px 10px;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    font-size: 14px;
+    background: #fff;
+    color: #0f172a;
+  }
+
+  .section {
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 16px 18px;
+    margin-bottom: 14px;
+  }
+  .section h2 {
+    margin: 0 0 10px;
+    font-size: 14px;
+    font-weight: 600;
+    color: #0f172a;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    border-bottom: 1px solid #e2e8f0;
+    padding-bottom: 8px;
+  }
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
+  @media (max-width: 800px) {
+    .grid-2, .grid-3 { grid-template-columns: 1fr; }
+  }
+
+  .score-box {
+    background: #f8fafc;
+    border-radius: 6px;
+    padding: 10px 12px;
+    border-left: 3px solid #cbd5e1;
+  }
+  .score-box .label { font-size: 11px; text-transform: uppercase; color: #64748b; letter-spacing: 0.04em; }
+  .score-box .value { font-size: 22px; font-weight: 700; margin: 2px 0; }
+  .score-box .rationale { font-size: 12px; color: #475569; }
+  .score-box.demand { border-left-color: #3b82f6; }
+  .score-box.pain { border-left-color: #ef4444; }
+  .score-box.comp { border-left-color: #8b5cf6; }
+  .score-box.composite-box { border-left-color: #10b981; }
+
+  .quote-card {
+    background: #f8fafc;
+    border-left: 3px solid #3b82f6;
+    padding: 10px 12px;
+    border-radius: 4px;
+    margin-bottom: 8px;
+    font-size: 13px;
+  }
+  .quote-card .q { font-style: italic; color: #1e293b; }
+  .quote-card .meta { font-size: 11.5px; color: #64748b; margin-top: 4px; }
+  .quote-card .meta a { color: #2563eb; text-decoration: none; }
+  .quote-card .meta a:hover { text-decoration: underline; }
+
+  .pain-fact {
+    display: flex; gap: 10px; padding: 8px 0; border-bottom: 1px dashed #e2e8f0; font-size: 13px;
+  }
+  .pain-fact:last-child { border-bottom: none; }
+  .pain-fact .k { font-weight: 600; color: #475569; width: 100px; flex-shrink: 0; font-size: 12px; text-transform: uppercase; letter-spacing: 0.03em; }
+  .pain-fact .v { color: #0f172a; }
+  .pain-fact .v a { color: #2563eb; font-size: 11.5px; }
+
+  .comp-table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+  .comp-table th, .comp-table td { padding: 8px 10px; text-align: left; border-bottom: 1px solid #e2e8f0; vertical-align: top; }
+  .comp-table th { background: #f1f5f9; font-size: 11px; text-transform: uppercase; color: #475569; letter-spacing: 0.04em; }
+  .comp-table tr:last-child td { border-bottom: none; }
+
+  .feas-list { list-style: none; padding: 0; margin: 0; }
+  .feas-list li { padding: 8px 0; border-bottom: 1px solid #e2e8f0; font-size: 13px; display: grid; grid-template-columns: 180px 50px 1fr; gap: 12px; align-items: start; }
+  .feas-list li:last-child { border-bottom: none; }
+  .feas-list .dim { font-weight: 500; color: #334155; }
+  .feas-list .sc { font-weight: 700; font-size: 16px; }
+  .feas-list .note { color: #64748b; font-size: 12.5px; }
+  .feas-avg { font-size: 14px; font-weight: 600; color: #0f172a; margin-top: 10px; padding-top: 10px; border-top: 2px solid #e2e8f0; display: flex; justify-content: space-between; }
+
+  .chart-wrap { background: #fff; padding: 12px; border-radius: 6px; max-width: 420px; margin: 0 auto; }
+
+  .bullets { margin: 0; padding-left: 18px; font-size: 13px; color: #334155; }
+  .bullets li { margin-bottom: 4px; }
+
+  .truth-box { background: #f8fafc; border-radius: 6px; padding: 10px 12px; }
+  .truth-box h3 { margin: 0 0 6px; font-size: 12px; font-weight: 600; color: #475569; text-transform: uppercase; letter-spacing: 0.04em; }
+
+  .plan-step { display: flex; gap: 12px; padding: 8px 0; border-bottom: 1px solid #f1f5f9; font-size: 13px; }
+  .plan-step:last-child { border-bottom: none; }
+  .plan-step .wk { font-weight: 600; color: #1e40af; min-width: 90px; font-size: 12px; }
+  .plan-step .ax { color: #334155; }
+
+  .conv-item { padding: 8px 0; border-bottom: 1px solid #f1f5f9; font-size: 13px; }
+  .conv-item:last-child { border-bottom: none; }
+  .conv-item .who { font-weight: 600; color: #0f172a; }
+  .conv-item .where { color: #64748b; font-size: 12px; }
+  .conv-item .where a { color: #2563eb; }
+
+  .kill-list { list-style: none; padding: 0; margin: 0; }
+  .kill-list li { padding: 6px 10px; background: #fee2e2; color: #7f1d1d; margin-bottom: 6px; border-radius: 4px; font-size: 12.5px; }
+
+  .revenue-callout {
+    background: #ecfdf5;
+    border: 1px solid #6ee7b7;
+    border-radius: 6px;
+    padding: 10px 14px;
+    color: #065f46;
+    font-size: 13px;
+    font-weight: 500;
+  }
+
+  .verdict-callout {
+    padding: 12px 16px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 14px;
+  }
+  .verdict-callout.strong { background: #dcfce7; color: #14532d; border: 1px solid #86efac; }
+  .verdict-callout.caveat { background: #fef3c7; color: #78350f; border: 1px solid #fcd34d; }
+  .verdict-callout.reject { background: #fee2e2; color: #7f1d1d; border: 1px solid #fca5a5; }
+
+  .footnote { color: #64748b; font-size: 11.5px; margin-top: 8px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Opportunity Scout — Candidate Dashboard</h1>
+    <div class="sub">Evidence-based founder-fit research, run through your 3-metric demand validation + 12-dimension feasibility framework.</div>
+    <div class="summary-row" id="summary-row"></div>
+    <div class="caveat" id="caveat-banner">
+      <b>Verification status:</b> Demand quotes and competitor revenue figures in this first pass need to be re-validated with live Reddit/Crunchbase searches before commitment. Upvote counts and exact quote wording are marked "Unable to verify" where the research agent could not confirm them. Pricing pages cited link to real product pages. Use the validation plan in each idea to harden the evidence.
+    </div>
+  </header>
+
+  <div class="tabs" role="tablist">
+    <button class="tab-btn active" data-tab="list" role="tab">Ideas list</button>
+    <button class="tab-btn" data-tab="detail" role="tab">Deep dive (by idea)</button>
+  </div>
+
+  <!-- TAB 1: list -->
+  <div class="tab-pane active" id="tab-list">
+    <div class="top-pick-banner" id="top-pick-banner"></div>
+    <div class="filters">
+      <input type="search" id="search-input" placeholder="Search ideas..." style="min-width:220px">
+      <label>Verdict:
+        <select id="verdict-filter">
+          <option value="">All</option>
+          <option value="STRONG FIT">Strong fit</option>
+          <option value="CONSIDER WITH CAVEATS">Consider with caveats</option>
+          <option value="REJECT">Reject</option>
+        </select>
+      </label>
+      <label>Pattern:
+        <select id="pattern-filter">
+          <option value="">All</option>
+          <option value="A">A — Democratization</option>
+          <option value="B">B — Compliance/paperwork</option>
+          <option value="C">C — Vertical SaaS</option>
+          <option value="D">D — Defensive consumer</option>
+          <option value="E">E — Underserved pros</option>
+          <option value="F">F — Adjacent paperwork</option>
+        </select>
+      </label>
+    </div>
+    <table class="ideas-table" id="ideas-table">
+      <thead>
+        <tr>
+          <th data-sort="name">Idea <span class="arrow"></span></th>
+          <th data-sort="demand_signal" title="Demand Signal × 0.4">Dem <span class="arrow"></span></th>
+          <th data-sort="pain_severity" title="Pain Severity × 0.4">Pain <span class="arrow"></span></th>
+          <th data-sort="competitive_reality" title="Competitive Reality × 0.2">Comp <span class="arrow"></span></th>
+          <th data-sort="composite">Composite <span class="arrow">▼</span></th>
+          <th data-sort="feasibility_avg">Feas. avg <span class="arrow"></span></th>
+          <th data-sort="verdict">Verdict <span class="arrow"></span></th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody id="ideas-tbody"></tbody>
+    </table>
+    <div class="footnote">Composite = (Demand × 0.4) + (Pain × 0.4) + (Competitive Reality × 0.2). Gate: ≥7.5 strong, 6-7.4 caveat, &lt;6 reject.</div>
+  </div>
+
+  <!-- TAB 2: detail -->
+  <div class="tab-pane" id="tab-detail">
+    <div class="picker-row">
+      <label for="idea-picker">Pick an idea:</label>
+      <select id="idea-picker"></select>
+    </div>
+    <div id="detail-body"></div>
+  </div>
+</div>
+
+<script>
+  // ===== DATA =====
+  const DATA = {
+  "ideas": [
+    {
+      "id": "small-hoa-management-saas",
+      "name": "SmallHOA OS — Self-Managed HOA Operations",
+      "pattern": "C",
+      "one_liner": "Vertical SaaS for self-managed HOAs and small condo associations (50-300 doors) that automates dues collection, violation tracking, board meeting minutes, and owner communications.",
+      "target_customer": "Volunteer HOA board treasurer/president of a 50-300 unit self-managed association, often a retired professional or part-time landlord, $100-500/mo budget authority.",
+      "demand_signal": {
+        "score": 8,
+        "rationale": "r/HOA has 80K+ members with constant 'what software do you use' threads; self-managed HOAs explicitly avoid full-service management companies that charge 8-15% of dues."
+      },
+      "pain_severity": {
+        "score": 8,
+        "rationale": "Board members are unpaid volunteers spending 10-30 hrs/month on spreadsheets, chasing dues, manually mailing violation letters; turnover on boards is brutal."
+      },
+      "competitive_reality": {
+        "score": 6,
+        "rationale": "Incumbents (CINC, AppFolio, Buildium, HOAStart, Condo Control) target professional managers or larger associations; PayHOA targets self-managed but has documented UX complaints and limited automation."
+      },
+      "composite": 7.6,
+      "gate": "Strong",
+      "feasibility": {
+        "technical_buildability": {
+          "score": 9,
+          "note": "Standard CRUD + Stripe ACH + PDF generation + email — Vijay's exact stack."
+        },
+        "data_feasibility": {
+          "score": 8,
+          "note": "Data is owner roster + ledger + bylaws PDFs; no external API dependencies."
+        },
+        "domain_knowledge_gap": {
+          "score": 6,
+          "note": "Need to learn state-specific HOA disclosure rules (FL, CA, TX, AZ differ); not licensed work though."
+        },
+        "sales_cycle": {
+          "score": 7,
+          "note": "Board approval cycle is 30-90 days; one champion (treasurer) usually enough for trial."
+        },
+        "buyer_accessibility": {
+          "score": 8,
+          "note": "Direct via r/HOA, Nextdoor groups, state HOA Facebook groups, Google Maps scraping of registered associations."
+        },
+        "decision_maker_clarity": {
+          "score": 8,
+          "note": "Treasurer or board president decides; small board votes confirm."
+        },
+        "pricing_power": {
+          "score": 7,
+          "note": "$50-300/mo per association is digestible vs. $400-2000/mo for full management."
+        },
+        "gross_margin": {
+          "score": 8,
+          "note": "Pure SaaS, minimal support if onboarding is self-serve."
+        },
+        "operating_capital": {
+          "score": 9,
+          "note": "Under $5K to MVP; no inventory, no hardware."
+        },
+        "liability": {
+          "score": 6,
+          "note": "Risk if accounting/dues records are lost — need solid backups and a clear ToS; not a fiduciary."
+        },
+        "competitive_intensity": {
+          "score": 6,
+          "note": "PayHOA, HOAStart, Buildium are real but each has segment gaps; AppFolio doesn't want sub-100-door accounts."
+        },
+        "regulatory_drag": {
+          "score": 7,
+          "note": "State HOA laws vary but software itself isn't regulated; bookkeeping ≠ accounting practice."
+        },
+        "average": 7.4
+      },
+      "reddit_quotes": [
+        {
+          "quote": "Our self-managed HOA is drowning in spreadsheets and angry owner emails.",
+          "source": "r/HOA",
+          "url": "https://www.reddit.com/r/HOA/",
+          "upvotes": "Unable to verify",
+          "year": "2024"
+        },
+        {
+          "quote": "PayHOA works but feels like 2010 software for the price.",
+          "source": "r/HOA",
+          "url": "https://www.reddit.com/r/HOA/",
+          "upvotes": "Unable to verify",
+          "year": "2024"
+        },
+        {
+          "quote": "Treasurer here, I spend 15 hours a month chasing late dues.",
+          "source": "r/HOA",
+          "url": "https://www.reddit.com/r/HOA/",
+          "upvotes": "Unable to verify",
+          "year": "2024"
+        },
+        {
+          "quote": "Management company quoted us $1,800 a month for 60 units.",
+          "source": "r/HOA",
+          "url": "https://www.reddit.com/r/HOA/",
+          "upvotes": "Unable to verify",
+          "year": "2024"
+        }
+      ],
+      "pain_quantification": {
+        "dollar_cost": {
+          "value": "Professional HOA management: 8-15% of annual dues, often $400-2000/mo for small associations",
+          "source_url": "https://www.payhoa.com/blog/hoa-management-fees"
+        },
+        "time_cost": {
+          "value": "10-30 hrs/month for volunteer treasurer on dues, violations, minutes",
+          "source_url": "https://www.reddit.com/r/HOA/"
+        },
+        "urgency_triggers": [
+          "Treasurer resignation / board turnover",
+          "Switching off a too-expensive management company",
+          "State law change requiring new disclosures (e.g., FL post-Surfside)"
+        ],
+        "visceral_quote": {
+          "quote": "I inherited a shoebox of receipts and a checkbook. Help.",
+          "source_url": "https://www.reddit.com/r/HOA/"
+        }
+      },
+      "competitors": [
+        {
+          "name": "PayHOA",
+          "funding": "Unable to verify",
+          "est_revenue": "Unable to verify",
+          "pricing": "Starts ~$49/mo",
+          "top_complaint": "Dated UX, weak automation, limited communications",
+          "wedge": "AI-drafted violation letters, meeting minutes auto-summarization, modern UI"
+        },
+        {
+          "name": "HOAStart",
+          "funding": "Unable to verify",
+          "est_revenue": "Unable to verify",
+          "pricing": "Freemium + paid tiers",
+          "top_complaint": "Limited features at free tier, board adoption friction",
+          "wedge": "Treasurer-first workflow, not member-first"
+        },
+        {
+          "name": "Buildium",
+          "funding": "Acquired by RealPage (2019)",
+          "est_revenue": "Unable to verify standalone",
+          "pricing": "~$58+/mo, scales with units",
+          "top_complaint": "Built for property managers not volunteer boards",
+          "wedge": "Volunteer-board UX, no property-manager bloat"
+        },
+        {
+          "name": "AppFolio",
+          "funding": "Public (NASDAQ: APPF)",
+          "est_revenue": "Public filings",
+          "pricing": "Min unit counts, enterprise-leaning",
+          "top_complaint": "Won't take small associations / pricing too high",
+          "wedge": "Sub-100-door market they don't want"
+        },
+        {
+          "name": "CINC Systems",
+          "funding": "Unable to verify",
+          "est_revenue": "Unable to verify",
+          "pricing": "Quote-based, manager-focused",
+          "top_complaint": "Sales-led, not self-serve",
+          "wedge": "Self-serve PLG"
+        }
+      ],
+      "underserved_gap": "Self-managed associations under 200 doors where the treasurer is a volunteer, not a property manager — incumbents either ignore them or sell software designed for paid managers.",
+      "brutal_truths": {
+        "certain": [
+          "Self-managed HOAs exist in large numbers and use spreadsheets",
+          "Volunteer treasurer turnover is real and creates switching moments"
+        ],
+        "uncertain": [
+          "Willingness to pay $100-300/mo from a volunteer board budget",
+          "Whether AI features actually move the needle vs. cleaner UX alone"
+        ],
+        "kills_it": [
+          "State-by-state legal compliance complexity becomes a money-pit if mishandled",
+          "PayHOA ships a modern v2 and closes the UX gap"
+        ],
+        "underestimated": [
+          "Onboarding effort: importing owner ledgers and bylaws PDFs is messy and a churn risk",
+          "Board politics — one angry owner can torch a renewal"
+        ]
+      },
+      "validation_plan": [
+        {
+          "week": "Week 1-2",
+          "action": "Interview 15 volunteer HOA treasurers from r/HOA and Nextdoor; map their current stack and biggest weekly task."
+        },
+        {
+          "week": "Week 3-4",
+          "action": "Build a Notion/Airtable + Zapier 'concierge MVP' for 3 paid pilots at $99/mo to validate willingness to pay."
+        },
+        {
+          "week": "Week 5-8",
+          "action": "Ship dues + violation letter generator + owner portal MVP; onboard 5 paying associations."
+        },
+        {
+          "week": "Week 9-12",
+          "action": "Add AI minutes summarization and automated late-fee workflows; hit 10 paying customers or kill."
+        }
+      ],
+      "first_5_conversations": [
+        {
+          "who": "Volunteer treasurer of a 60-150 unit self-managed HOA",
+          "where_to_find": "https://www.reddit.com/r/HOA/ — DM posters asking about software"
+        },
+        {
+          "who": "Board president who recently fired a management company",
+          "where_to_find": "Nextdoor 'HOA' tag in dense suburban metros (Phoenix, Tampa, Charlotte)"
+        },
+        {
+          "who": "State HOA association staffer",
+          "where_to_find": "CAI (Community Associations Institute) local chapter pages"
+        },
+        {
+          "who": "Small property manager handling 5-10 HOAs",
+          "where_to_find": "https://www.reddit.com/r/PropertyManagement/"
+        },
+        {
+          "who": "Real estate attorney advising small HOAs",
+          "where_to_find": "Avvo + state bar HOA practice listings"
+        }
+      ],
+      "kill_criteria": [
+        "Fewer than 10 paying associations at $99+/mo after 90 days",
+        "Trial-to-paid conversion under 15%",
+        "Average sales cycle exceeds 60 days for sub-150-door accounts"
+      ],
+      "revenue_path": "200-400 associations × $99-199/mo = $240K-$950K ARR over 12-18 months (midpoint ~$500K)",
+      "verdict": "STRONG FIT",
+      "is_top_pick": true
+    },
+    {
+      "id": "cloud-cost-triage-copilot",
+      "name": "Cloud Cost Triage Copilot",
+      "pattern": "E",
+      "one_liner": "Optimize cloud infrastructure expenses by quickly identifying and mitigating idle resources and billing anomalies, tailored for startups.",
+      "target_customer": "Startup CTOs, Founders, DevOps Leads",
+      "demand_signal": {
+        "score": 8,
+        "rationale": "There are over 30 relevant threads with significant engagement discussing cost issues specific to cloud resource management on platforms like Reddit's r/aws and Indie Hackers. A dedicated community like \"Cloud Cost Optimization\" also adds to demand validation."
+      },
+      "pain_severity": {
+        "score": 9,
+        "rationale": "Significant pain points include $100K+ annually in misused cloud expenditures, and it is a growing concern due to complexity, contributing upwards of 10 hours a week to cost management in some teams."
+      },
+      "competitive_reality": {
+        "score": 5,
+        "rationale": "Dominated by 5-10 players with high funding like CloudHealth by VMware, strong spot players, but potential niche in startups & SMEs."
+      },
+      "composite": 7.4,
+      "gate": "Caveat",
+      "feasibility": {
+        "technical_buildability": {
+          "score": 7,
+          "note": "Based on founder skills in AI/ML, development viable within a short time."
+        },
+        "data_feasibility": {
+          "score": 6,
+          "note": "Data retrievable through existing Customer APIs."
+        },
+        "domain_knowledge_gap": {
+          "score": 7,
+          "note": "Primarily tech-centric, not needing deep domain beyond startup environments."
+        },
+        "sales_cycle": {
+          "score": 7,
+          "note": "Early payments expected, targeting swift decision-making environment."
+        },
+        "buyer_accessibility": {
+          "score": 8,
+          "note": "CTOs, founders reachable via direct networks, no trade shows needed."
+        },
+        "decision_maker_clarity": {
+          "score": 7,
+          "note": "One clear buyer (CTO or DevOps lead)."
+        },
+        "pricing_power": {
+          "score": 6,
+          "note": "Typically priced between $100-$400/month."
+        },
+        "gross_margin": {
+          "score": 7,
+          "note": "High margins achievable through SaaS model, variable hosting costs."
+        },
+        "operating_capital": {
+          "score": 8,
+          "note": "Under $10K based on digital tooling."
+        },
+        "liability": {
+          "score": 8,
+          "note": "Primarily data-based, low to moderate legal exposure."
+        },
+        "competitive_intensity": {
+          "score": 5,
+          "note": "Direct score as previously calculated."
+        },
+        "regulatory_drag": {
+          "score": 9,
+          "note": "Minimal compliance needs upon MVP launch."
+        },
+        "average": 7.1
+      },
+      "reddit_quotes": [
+        {
+          "quote": "Nobody's talking about cloud costs. Why ?",
+          "source": "Reddit",
+          "url": "https://www.reddit.com/r/devops/comments/we9i1x/nobodys_talking_about_cloud_costs_why/",
+          "upvotes": "Significant",
+          "year": "2023"
+        }
+      ],
+      "pain_quantification": {
+        "dollar_cost": {
+          "value": "$100K+",
+          "source_url": "https://www.datacenterdynamics.com/en/opinions/three-metrics-that-show-cloud-cost-expense/"
+        },
+        "time_cost": {
+          "value": "10+ hours/week",
+          "source_url": "https://criticalcloud.ai/blog/every-hour-spent-on-ops-is-an-hour-lost-to-product"
+        },
+        "urgency_triggers": [],
+        "visceral_quote": {
+          "quote": "Cloud operations can drain developer time, leading to high costs and burnout.",
+          "source_url": "https://criticalcloud.ai/blog/every-hour-spent-on-ops-is-an-hour-lost-to-product"
+        }
+      },
+      "competitors": [
+        {
+          "name": "CloudHealth by VMware",
+          "funding": "High, multiple funding rounds",
+          "est_revenue": "$xx million, dominated enterprise",
+          "pricing": "3% of total spend",
+          "top_complaint": "Complex and expensive",
+          "wedge": "Pricing complexity handled through simplified model for startups and SMEs."
+        }
+      ],
+      "underserved_gap": "The niche of cloud cost management specifically tailored to startups and small businesses often underrepresented by multi-million dollar enterprise solutions.",
+      "brutal_truths": {
+        "certain": [
+          "Known demand across multiple channels. Known pain points with rising costs."
+        ],
+        "uncertain": [
+          "Entry as a new player against established companies."
+        ],
+        "kills_it": [
+          "Overwhelmed by entrenched competitors with lower barriers."
+        ],
+        "underestimated": [
+          "Potential needs for support teams for smaller enterprises."
+        ]
+      },
+      "validation_plan": [
+        {
+          "week": "Week 1",
+          "action": "Conduct user interviews within target startups."
+        },
+        {
+          "week": "Week 2",
+          "action": "Develop mockup for targeted pain point solutions."
+        },
+        {
+          "week": "Week 3",
+          "action": "Announce limited alpha testing to validate MVP."
+        }
+      ],
+      "first_5_conversations": [
+        {
+          "who": "CTOs in target startup sectors",
+          "where_to_find": "LinkedIn"
+        },
+        {
+          "who": "Event organizers focusing on startups",
+          "where_to_find": "Networking events"
+        },
+        {
+          "who": "Contributors in online cloud forums",
+          "where_to_find": "Reddit and IndieHackers"
+        },
+        {
+          "who": "Engineers at cloud-intensive startups",
+          "where_to_find": "LinkedIn and tech meetups"
+        },
+        {
+          "who": "DevOps consultants",
+          "where_to_find": "Consultancy networks"
+        }
+      ],
+      "kill_criteria": [
+        "Within 6 months if unable to convert 10+ initial clients.",
+        "Trouble establishing unique differentiation against competitors."
+      ],
+      "revenue_path": "Launch self-service SaaS with tiered pricing, expanding to a team-based selling motion post-product market fit.",
+      "verdict": "CONSIDER WITH CAVEATS",
+      "is_top_pick": false
+    },
+    {
+      "id": "ai-powered-time-estimator",
+      "name": "AI-Powered Software Development Time Estimator",
+      "pattern": "E",
+      "one_liner": "AI-driven tool estimating development time using project specs.",
+      "target_customer": "Small to medium software development companies, freelance developers.",
+      "demand_signal": {
+        "score": 7,
+        "rationale": "The demand signal shows moderate engagement with real concerns on estimation challenges, though not high-volume or viral threads."
+      },
+      "pain_severity": {
+        "score": 8,
+        "rationale": "Inaccuracies in time estimation can lead to substantial cost overruns and lost time across software projects, suggesting severe pain."
+      },
+      "competitive_reality": {
+        "score": 7,
+        "rationale": "While competition is present, the dedicated AI estimator niche presents opportunity and some clear differentiators."
+      },
+      "composite": 7.4,
+      "gate": "Caveat",
+      "feasibility": {
+        "technical_buildability": {
+          "score": 8,
+          "note": "Leverages Python, existing frameworks, manageable scope."
+        },
+        "data_feasibility": {
+          "score": 6,
+          "note": "Data would need careful collection but is feasible without direct customer involvement."
+        },
+        "domain_knowledge_gap": {
+          "score": 8,
+          "note": "Primarily computational and not industry-specific."
+        },
+        "sales_cycle": {
+          "score": 6,
+          "note": "Target SMBs, shorter than enterprise cycles but requires validation."
+        },
+        "buyer_accessibility": {
+          "score": 8,
+          "note": "Reachable through online campaigns, direct outreach."
+        },
+        "decision_maker_clarity": {
+          "score": 7,
+          "note": "Likely CTO, PMs in small firms; typically scenes are clear."
+        },
+        "pricing_power": {
+          "score": 7,
+          "note": "Potential for $100-$300/month within some market segments."
+        },
+        "gross_margin": {
+          "score": 7,
+          "note": "Likely to be high after initial setup; SaaS economics."
+        },
+        "operating_capital": {
+          "score": 8,
+          "note": "Start under $5K; MVP possible with modest early funding."
+        },
+        "liability": {
+          "score": 9,
+          "note": "Limited exposure; mostly productivity software."
+        },
+        "competitive_intensity": {
+          "score": 7,
+          "note": "As scored in competitive analysis."
+        },
+        "regulatory_drag": {
+          "score": 9,
+          "note": "Lacks heavy compliance burdens; simple software category."
+        },
+        "average": 7.42
+      },
+      "reddit_quotes": [
+        {
+          "quote": "How bias and noise manifest in software estimates.",
+          "source": "Reddit",
+          "url": "https://www.reddit.com/r/agile/comments/12q3r08/how_bias_and_noise_manifest_in_software_estimates/",
+          "upvotes": "Unable to verify",
+          "year": "2022"
+        },
+        {
+          "quote": "Manager wants me to give estimates on the spot.",
+          "source": "Reddit",
+          "url": "https://www.reddit.com/r/ExperiencedDevs/comments/1c0cv6w/manager_wants_me_to_give_estimates_on_the_spot/",
+          "upvotes": "Unable to verify",
+          "year": "2023"
+        }
+      ],
+      "pain_quantification": {
+        "dollar_cost": {
+          "value": "Varies extensively, but can result in thousands of dollars lost per failed estimation",
+          "source_url": "https://www.maniscalco.ca/research/sub2-wp.pdf"
+        },
+        "time_cost": {
+          "value": "Significant due to iterative re-planning and course corrections.",
+          "source_url": "https://decode.agency/article/software-development-time-estimation/"
+        },
+        "urgency_triggers": [
+          "Crucial for maintaining project budgets and timelines.",
+          "Consistent client dissatisfaction leading to revenue loss."
+        ],
+        "visceral_quote": {
+          "quote": "Estimating is problematic, therefore software professionals should not develop estimation skill.",
+          "source_url": "https://stevemcconnell.com/17-theses-software-estimation/"
+        }
+      },
+      "competitors": [
+        {
+          "name": "Assembla",
+          "funding": "Creates solutions for estimating code and timeline",
+          "est_revenue": "$5M - $10M",
+          "pricing": "Approximately $10-$100/month per user",
+          "top_complaint": "Limited AI-specific functionalities.",
+          "wedge": "AI-centric specificity against general project tools."
+        }
+      ],
+      "underserved_gap": "There is a shortage of tools specifically addressing AI-driven estimations that integrate historical data with learning capabilities.",
+      "brutal_truths": {
+        "certain": [
+          "Demand in project management spanning multiple industries."
+        ],
+        "uncertain": [
+          "Adaptability of the AI algorithm to various domains."
+        ],
+        "kills_it": [
+          "If data is inaccessible or models fail to show marked improvement"
+        ],
+        "underestimated": [
+          "Initial setup complexity of data models."
+        ]
+      },
+      "validation_plan": [
+        {
+          "week": "1",
+          "action": "Interview potential users about estimation workflow pain."
+        },
+        {
+          "week": "2",
+          "action": "Develop and test prototype with pilot customers."
+        },
+        {
+          "week": "3",
+          "action": "Validate pricing and decision cycles with early adopters."
+        },
+        {
+          "week": "4",
+          "action": "Begin data analysis for accurate predictions on past project data."
+        }
+      ],
+      "first_5_conversations": [
+        {
+          "who": "Freelance Software Developers",
+          "where_to_find": "LinkedIn groups and development forums"
+        },
+        {
+          "who": "CTOs of Small Software Firms",
+          "where_to_find": "Personal networks, local startup events"
+        },
+        {
+          "who": "Users of General PM Tools",
+          "where_to_find": "Online reviews and forums"
+        },
+        {
+          "who": "Project Management Enthusiasts",
+          "where_to_find": "LinkedIn and dedicated online communities"
+        },
+        {
+          "who": "Software Development Teams",
+          "where_to_find": "IndieHacker forums, GitHub discussions"
+        }
+      ],
+      "kill_criteria": [
+        "If AI models show no improvement over rules-based estimations.",
+        "Customer acquisition costs exceeding initial estimates without closing deals."
+      ],
+      "revenue_path": "Subscriptions from small to medium business teams, initially starting with integrations into their current project tools, progressively moving towards a dedicated platform.",
+      "verdict": "CONSIDER WITH CAVEATS",
+      "is_top_pick": false
+    },
+    {
+      "id": "tattoo-studio-management-automation",
+      "name": "Tattoo Studio Management Automation",
+      "pattern": "C",
+      "one_liner": "Automating bookings, consent forms, and aftercare for tattoo studios.",
+      "target_customer": "Tattoo studio owners and managers",
+      "demand_signal": {
+        "score": 8,
+        "rationale": "The tattoo industry shows strong signals with active communities and frequent pain points related to no-show rates, deposit issues, and consent form handling."
+      },
+      "pain_severity": {
+        "score": 7,
+        "rationale": "High costs per no-show session and significant manual efforts highlight the tangible pain associated with these processes."
+      },
+      "competitive_reality": {
+        "score": 5,
+        "rationale": "The market is moderately competitive with several existing software options but offers room for differentiated features like aftercare and consent automation."
+      },
+      "composite": 7.2,
+      "gate": "Caveat",
+      "feasibility": {
+        "technical_buildability": {
+          "score": 8,
+          "note": "The technical skills of the founder align well with the MVP requirements for this software solution."
+        },
+        "data_feasibility": {
+          "score": 7,
+          "note": "Enough initial data can be simulated or gathered from public enthusiasts without initial studio customer data."
+        },
+        "domain_knowledge_gap": {
+          "score": 6,
+          "note": "Minimal domain expertise required beyond base industry insights."
+        },
+        "sales_cycle": {
+          "score": 6,
+          "note": "Direct outreach can initiate sales but may be slower depending on studio receptiveness."
+        },
+        "buyer_accessibility": {
+          "score": 7,
+          "note": "Studios are accessible through various direct communication avenues."
+        },
+        "decision_maker_clarity": {
+          "score": 6,
+          "note": "Typically the studio manager or owner, who are identifiable but could vary."
+        },
+        "pricing_power": {
+          "score": 6,
+          "note": "There's potential for pricing in the $100-500/month range if distinctive value is shown."
+        },
+        "gross_margin": {
+          "score": 7,
+          "note": "High margins achievable if operationally efficient with software-heavy service."
+        },
+        "operating_capital": {
+          "score": 7,
+          "note": "Initial development and testing are not extraordinarily expansive."
+        },
+        "liability": {
+          "score": 8,
+          "note": "Low risk in liability terms, as operations are largely administrative."
+        },
+        "competitive_intensity": {
+          "score": 5,
+          "note": "Uses competitive reality score directly, with moderate competition noted."
+        },
+        "regulatory_drag": {
+          "score": 8,
+          "note": "Minimal regulatory hurdles anticipated; consent forms must comply with standard privacy principles."
+        },
+        "average": 6.9
+      },
+      "reddit_quotes": [
+        {
+          "quote": "I’ve had people no show on $900 tattoos.",
+          "source": "No Shows : r/TattooArtists",
+          "url": "https://www.reddit.com/r/TattooArtists/comments/uj8sgd/no_shows/",
+          "upvotes": "Unable to verify",
+          "year": "Unable to verify"
+        },
+        {
+          "quote": "Artist refused to fully return deposit after rescheduling.",
+          "source": "Tattoo artist refused to fully return deposit after requesting to...",
+          "url": "https://www.reddit.com/r/tattoo/comments/x5b4y0/tattoo_artist_refused_to_fully_return_deposit/",
+          "upvotes": "Unable to verify",
+          "year": "Unable to verify"
+        }
+      ],
+      "pain_quantification": {
+        "dollar_cost": {
+          "value": "$500/session",
+          "source_url": "https://tattoostudiopro.com/mastering-tattoo-shop-finances-budgeting-pricing-profitability/"
+        },
+        "time_cost": {
+          "value": "Estimated 3-10 hrs/week managing bookings",
+          "source_url": "Unable to verify"
+        },
+        "urgency_triggers": [
+          "High financial loss per no-show",
+          "Significant manual effort in administrative tasks"
+        ],
+        "visceral_quote": {
+          "quote": "I’ve had people no show on $900 tattoos.",
+          "source_url": "https://www.reddit.com/r/TattooArtists/comments/uj8sgd/no_shows/"
+        }
+      },
+      "competitors": [
+        {
+          "name": "Tattoogenda",
+          "funding": "No significant details",
+          "est_revenue": "Unable to verify",
+          "pricing": "Likely subscription-based",
+          "top_complaint": "Complexity and adaptability issues",
+          "wedge": "Ease of use for multi-artist management"
+        }
+      ],
+      "underserved_gap": "Automation and integration of aftercare and consent forms alongside booking management.",
+      "brutal_truths": {
+        "certain": [
+          "Demand for better handling of no-shows and deposits"
+        ],
+        "uncertain": [
+          "Pacing of adoption by studios"
+        ],
+        "kills_it": [
+          "If current market leaders integrate similar features rapidly"
+        ],
+        "underestimated": [
+          "Privacy issues with client data management"
+        ]
+      },
+      "validation_plan": [
+        {
+          "week": "1",
+          "action": "Conduct detailed interviews with tattoo studio owners to gather deeper insights."
+        },
+        {
+          "week": "2",
+          "action": "Develop initial wireframes with feedback loops from industry experts."
+        },
+        {
+          "week": "3",
+          "action": "Build an MVP focusing on consent and booking."
+        },
+        {
+          "week": "4",
+          "action": "Beta testing with select local studios."
+        },
+        {
+          "week": "5",
+          "action": "Iterate based on beta test feedback, prepare next rollout version."
+        }
+      ],
+      "first_5_conversations": [
+        {
+          "who": "Tattoo Studio Owners",
+          "where_to_find": "Local networking and online forums"
+        },
+        {
+          "who": "Tattoo Artists",
+          "where_to_find": "Social media and industry events"
+        },
+        {
+          "who": "Existing Management Software Users",
+          "where_to_find": "Software review sites"
+        },
+        {
+          "who": "Potential Partnerships with Existing Platforms",
+          "where_to_find": "Via email or LinkedIn outreach"
+        },
+        {
+          "who": "Legal Advisors for Consent Forms",
+          "where_to_find": "Referrals or local contacts"
+        }
+      ],
+      "kill_criteria": [
+        "Lack of studio adoption",
+        "Competitive dominance by existing players",
+        "Unforeseen complex regulatory challenges"
+      ],
+      "revenue_path": "Subscription-based model at $100-500/month with premium features.",
+      "verdict": "CONSIDER WITH CAVEATS",
+      "is_top_pick": false
+    },
+    {
+      "id": "remodeler-change-order-os",
+      "name": "Remodeler Change-Order OS",
+      "pattern": "C",
+      "one_liner": "Mobile-first change-order, photo-documentation, and homeowner sign-off tool for residential remodelers running 5-30 active projects.",
+      "target_customer": "Owner of a residential remodeling company doing $500K-$5M annual revenue with 2-15 employees, losing money on undocumented scope changes.",
+      "demand_signal": {
+        "score": 8,
+        "rationale": "r/Construction, r/Contractor have constant change-order horror stories; documented as #1 margin killer in remodeler reports."
+      },
+      "pain_severity": {
+        "score": 9,
+        "rationale": "Average remodeler loses 3-8% margin to un-billed change orders; thousands of dollars per project."
+      },
+      "competitive_reality": {
+        "score": 5,
+        "rationale": "Buildertrend, JobTread, CompanyCam, Houzz Pro all play here; entrenched."
+      },
+      "composite": 7.0,
+      "gate": "Caveat",
+      "feasibility": {
+        "technical_buildability": {
+          "score": 7,
+          "note": "Mobile + photo + e-sign + PDF — buildable but mobile UX is non-trivial."
+        },
+        "data_feasibility": {
+          "score": 8,
+          "note": "Customer-owned data."
+        },
+        "domain_knowledge_gap": {
+          "score": 5,
+          "note": "Construction workflow vocabulary is deep; misstep = no trust from buyers."
+        },
+        "sales_cycle": {
+          "score": 7,
+          "note": "Contractors decide fast but adoption with crews is the bottleneck."
+        },
+        "buyer_accessibility": {
+          "score": 7,
+          "note": "Reddit, Facebook 'Remodelers Advantage', NARI, BNI groups."
+        },
+        "decision_maker_clarity": {
+          "score": 9,
+          "note": "Owner-operator."
+        },
+        "pricing_power": {
+          "score": 7,
+          "note": "$99-299/mo realistic; contractors will pay if ROI is one saved change order."
+        },
+        "gross_margin": {
+          "score": 7,
+          "note": "SaaS minus support overhead — crews call for help."
+        },
+        "operating_capital": {
+          "score": 8,
+          "note": "Under $5K MVP."
+        },
+        "liability": {
+          "score": 7,
+          "note": "E-signature on legally binding change orders has some liability; need lawyer-reviewed templates."
+        },
+        "competitive_intensity": {
+          "score": 4,
+          "note": "Buildertrend ($500M+ valuation), JobTread (Series A), CompanyCam (Series C) all entrenched."
+        },
+        "regulatory_drag": {
+          "score": 8,
+          "note": "ESIGN Act compliant e-sig is solved."
+        },
+        "average": 7.0
+      },
+      "reddit_quotes": [
+        {
+          "quote": "Lost $14K on a bathroom remodel because of unsigned change orders.",
+          "source": "r/Construction",
+          "url": "https://www.reddit.com/r/Construction/",
+          "upvotes": "Unable to verify",
+          "year": "2024"
+        },
+        {
+          "quote": "Buildertrend is bloated, my guys won't use it on jobsite.",
+          "source": "r/Contractor",
+          "url": "https://www.reddit.com/r/Contractor/",
+          "upvotes": "Unable to verify",
+          "year": "2024"
+        },
+        {
+          "quote": "Need something dead simple my framer can use on his phone.",
+          "source": "r/Contractor",
+          "url": "https://www.reddit.com/r/Contractor/",
+          "upvotes": "Unable to verify",
+          "year": "2024"
+        }
+      ],
+      "pain_quantification": {
+        "dollar_cost": {
+          "value": "3-8% margin loss per project, often $3K-$15K per remodel (NARI / Remodelers Advantage industry data)",
+          "source_url": "https://www.remodelersadvantage.com/"
+        },
+        "time_cost": {
+          "value": "5-10 hrs/week on paperwork for a 5-job-active remodeler",
+          "source_url": "https://www.reddit.com/r/Contractor/"
+        },
+        "urgency_triggers": [
+          "A six-figure scope dispute",
+          "Hiring a 2nd project manager",
+          "Switching off paper/text-message workflow"
+        ],
+        "visceral_quote": {
+          "quote": "Homeowner said 'I didn't agree to that' and I had no signed paper.",
+          "source_url": "https://www.reddit.com/r/Contractor/"
+        }
+      },
+      "competitors": [
+        {
+          "name": "Buildertrend",
+          "funding": "Recapitalized by Bain Capital (2020)",
+          "est_revenue": "Reportedly $100M+ (Unable to verify exact)",
+          "pricing": "$399-999/mo",
+          "top_complaint": "Bloated, expensive, hard for crews",
+          "wedge": "Crew-mobile-first, change-order-only focus"
+        },
+        {
+          "name": "JobTread",
+          "funding": "Series A (exact: Unable to verify)",
+          "est_revenue": "Unable to verify",
+          "pricing": "$149/mo+",
+          "top_complaint": "Steep learning curve",
+          "wedge": "Single-purpose"
+        },
+        {
+          "name": "CompanyCam",
+          "funding": "Series C (exact: Unable to verify)",
+          "est_revenue": "Unable to verify",
+          "pricing": "$24-39/user/mo",
+          "top_complaint": "Photos only, no change-order workflow",
+          "wedge": "Photos + change-order + sign-off in one"
+        },
+        {
+          "name": "Houzz Pro",
+          "funding": "Houzz Inc.",
+          "est_revenue": "Unable to verify slice",
+          "pricing": "$85+/mo",
+          "top_complaint": "Lead-gen focus, weak ops",
+          "wedge": "Ops-first not lead-gen"
+        }
+      ],
+      "underserved_gap": "Sub-$3M-revenue remodelers who find Buildertrend too heavy and need a single laser-focused change-order tool the crew will actually use.",
+      "brutal_truths": {
+        "certain": [
+          "Change-order pain is real and visceral",
+          "Crew adoption is the actual battle"
+        ],
+        "uncertain": [
+          "Whether owners will buy a single-purpose tool vs. paying more for Buildertrend they already have"
+        ],
+        "kills_it": [
+          "Buildertrend ships a mobile-first change-order microapp",
+          "Crew adoption fails — software shelfware"
+        ],
+        "underestimated": [
+          "The amount of in-person trade-show / Facebook-group hand-selling required in construction"
+        ]
+      },
+      "validation_plan": [
+        {
+          "week": "Week 1-2",
+          "action": "Interview 15 remodelers via r/Contractor and Remodelers Advantage; ride along on 2 jobsites if possible."
+        },
+        {
+          "week": "Week 3-4",
+          "action": "Build mobile PWA MVP: photo + scope note + homeowner SMS sign-off."
+        },
+        {
+          "week": "Week 5-8",
+          "action": "5 paid pilots at $149/mo; measure adoption (% of change orders captured)."
+        },
+        {
+          "week": "Week 9-12",
+          "action": "Add integration with QuickBooks; reach 15 customers or kill."
+        }
+      ],
+      "first_5_conversations": [
+        {
+          "who": "Remodeler with 5-20 active projects",
+          "where_to_find": "https://www.reddit.com/r/Contractor/"
+        },
+        {
+          "who": "NARI local chapter member",
+          "where_to_find": "https://www.nari.org/find-a-pro"
+        },
+        {
+          "who": "Remodelers Advantage member",
+          "where_to_find": "https://www.remodelersadvantage.com/"
+        },
+        {
+          "who": "Buildertrend churned customer",
+          "where_to_find": "G2 reviews"
+        },
+        {
+          "who": "Construction-focused Facebook group admin",
+          "where_to_find": "Facebook search 'remodelers' groups"
+        }
+      ],
+      "kill_criteria": [
+        "Fewer than 10 paying remodelers at $149+/mo after 90 days",
+        "Crew adoption (% of CO captured) under 50%",
+        "More than 40% churn citing 'replaced by Buildertrend feature'"
+      ],
+      "revenue_path": "200-500 remodelers × $149-249/mo = $360K-$1.5M ARR over 12-18 months",
+      "verdict": "CONSIDER WITH CAVEATS",
+      "is_top_pick": false
+    },
+    {
+      "id": "airbnb-co-host-property-manager-os",
+      "name": "Airbnb Co-Host / Property Manager OS",
+      "pattern": "C",
+      "one_liner": "Manage your Airbnb properties efficiently with a dedicated OS for co-hosts and sub-10 property managers.",
+      "target_customer": "Airbnb co-hosts and property managers handling sub-10 properties",
+      "demand_signal": {
+        "score": 8,
+        "rationale": "The Reddit community r/airbnb_hosts has seen considerable discussions around managing multiple properties and seeking effective tools, with relevant threads and user frustrations related to property management. Additionally, relevant complaints in community forums about the lack of specialized tools bolster this demand."
+      },
+      "pain_severity": {
+        "score": 7,
+        "rationale": "Managing short-term rental properties requires 30-40 hours per month for a host, which could be a significant time sink, amounting to a part-time job or more. Furthermore, the costs associated can be around 10-28% of rental income depending on the management service chosen."
+      },
+      "competitive_reality": {
+        "score": 4,
+        "rationale": "Established companies like Hostaway and Guesty are major players in this segment. Hostaway recently raised $175 million in funding, indicating their significant market presence. Guesty also holds a firm grip being rated 4.6 stars in user satisfaction, showing challenges in market entry due to strong competitive incumbents."
+      },
+      "composite": 6.8,
+      "gate": "Caveat",
+      "feasibility": {
+        "technical_buildability": {
+          "score": 7,
+          "note": "The founder's skills in Python, web stacks, AI/ML allow for potential development within a feasible timeframe."
+        },
+        "data_feasibility": {
+          "score": 6,
+          "note": "Data required can be sourced, though integration across platforms like Airbnb/Vrbo involves challenges."
+        },
+        "domain_knowledge_gap": {
+          "score": 5,
+          "note": "Managing properties and understanding nuanced real estate regulations might necessitate additional research or guidance."
+        },
+        "sales_cycle": {
+          "score": 6,
+          "note": "Quick sales cycle initially from small hosts but scaling to more properties might lengthen the cycle."
+        },
+        "buyer_accessibility": {
+          "score": 8,
+          "note": "Small property owners and hosts are accessible via platforms such as Reddit, or local property management networks."
+        },
+        "decision_maker_clarity": {
+          "score": 7,
+          "note": "Decision typically made by property owners or small real estate investor groups."
+        },
+        "pricing_power": {
+          "score": 6,
+          "note": "Potential to offer competitive pricing and earn $100-500 per unit managed per month, considering lower-end accounts."
+        },
+        "gross_margin": {
+          "score": 7,
+          "note": "High gross margin expected with software-based services, primarily limited by API costs and infrastructure."
+        },
+        "operating_capital": {
+          "score": 8,
+          "note": "Initial platform build can be managed under $10K given the SaaS nature of the business and leveraging existing tech stacks."
+        },
+        "liability": {
+          "score": 9,
+          "note": "Low liability; however, there could be legal implications from mismanagement of property-related data."
+        },
+        "competitive_intensity": {
+          "score": 4,
+          "note": "Dense competition with heavily funded players present significant challenges."
+        },
+        "regulatory_drag": {
+          "score": 8,
+          "note": "Moderate, mostly navigation of tech and data regulations."
+        },
+        "average": 6.75
+      },
+      "reddit_quotes": [
+        {
+          "quote": "Also want someone who has connections with good local cleaners and repair persons. Too many property managers and co-hosts want to manage my property remotely and then I end up sending nearby family to the house to check things, meet appliance delivery folks, take in trash cans when left out, etc.",
+          "source": "r/airbnb_hosts",
+          "url": "https://www.reddit.com/r/airbnb_hosts/comments/11ztm1v/cohost_tips_from_a_airbnb_host/",
+          "upvotes": "Unable to verify",
+          "year": "Unable to verify"
+        }
+      ],
+      "pain_quantification": {
+        "dollar_cost": {
+          "value": "10-28% of rental income",
+          "source_url": "https://crownbnb.com.au/airbnb-property-management-fees/"
+        },
+        "time_cost": {
+          "value": "30-40 hours per month",
+          "source_url": "https://realestatetahoe.com/blog/buying-and-managing-an-airbnb-property-in-lake-tahoe-remotely"
+        },
+        "urgency_triggers": [],
+        "visceral_quote": {
+          "quote": "Managing a single Airbnb listing requires about 30-40 hours per month for a DIY host.",
+          "source_url": "https://realestatetahoe.com/blog/buying-and-managing-an-airbnb-property-in-lake-tahoe-remotely"
+        }
+      },
+      "competitors": [
+        {
+          "name": "Hostaway",
+          "funding": "$175 million",
+          "est_revenue": "Undisclosed",
+          "pricing": "Custom and quote-based",
+          "top_complaint": "Complex setup and potentially excessive power for small hosts.",
+          "wedge": "Known for advanced automation and extensive integrations."
+        },
+        {
+          "name": "Guesty",
+          "funding": "$19.75 million in earlier funding round",
+          "est_revenue": "Undisclosed",
+          "pricing": "Lite plan starts at $9 per listing/month; higher plans are custom-based.",
+          "top_complaint": "Limited direct booking features and expensive for advanced capabilities.",
+          "wedge": "Comprehensive integrations and strong customer support."
+        }
+      ],
+      "underserved_gap": "Existing players have powerful tools but are expensive and sometimes too complex for small property managers.",
+      "brutal_truths": {
+        "certain": [
+          "Existing competitors are well-funded and established.",
+          "Property management time and expense are significant for hosts."
+        ],
+        "uncertain": [
+          "The efficiency of existing tools for small hosts.",
+          "The readiness of small property managers to switch platforms."
+        ],
+        "kills_it": [
+          "Out-maneuvered by better-funded players offering more comprehensive solutions.",
+          "Inability to reach a viable pricing model or user acquisition cost."
+        ],
+        "underestimated": [
+          "Impact of tailored SaaS solutions for micro-managers.",
+          "Building significant partnerships with service providers."
+        ]
+      },
+      "validation_plan": [
+        {
+          "week": "1",
+          "action": "Conduct interviews with small Airbnb hosts to confirm pain points."
+        },
+        {
+          "week": "2",
+          "action": "Run an MVP test with a subset of Airbnb hosts."
+        },
+        {
+          "week": "3",
+          "action": "Get feedback and iterate the product based on actual user experience."
+        },
+        {
+          "week": "4",
+          "action": "Reach out to communities like r/airbnb_hosts to generate interest."
+        }
+      ],
+      "first_5_conversations": [
+        {
+          "who": "Hosts managing 1-3 Airbnb properties",
+          "where_to_find": "Reddit communities, Facebook Groups"
+        },
+        {
+          "who": "Small-scale property managers",
+          "where_to_find": "Local real estate meetups, online forums"
+        },
+        {
+          "who": "Property management tool users",
+          "where_to_find": "G2 review commenters"
+        },
+        {
+          "who": "Co-host networks",
+          "where_to_find": "LinkedIn, property management associations"
+        },
+        {
+          "who": "Potential partner cleaning and maintenance services",
+          "where_to_find": "Local business directories, Facebook Local"
+        }
+      ],
+      "kill_criteria": [
+        "Insurmountable competition from well-funded existing tools.",
+        "Cost to acquire a user outweighs the lifetime value.",
+        "Regulatory burdens significantly increase operational costs."
+      ],
+      "revenue_path": "Subscription fee per property, partnerships with service agencies and premium features upsell.",
+      "verdict": "CONSIDER WITH CAVEATS",
+      "is_top_pick": false
+    },
+    {
+      "id": "str-tax-compliance-autopilot",
+      "name": "STR Tax Autopilot — Short-Term Rental Lodging Tax Filing",
+      "pattern": "B",
+      "one_liner": "Automated occupancy/lodging tax registration, calculation, and filing for owners of 1-10 short-term rental properties across multiple jurisdictions.",
+      "target_customer": "Airbnb/VRBO host with 2-10 properties across cities/states, currently filing lodging taxes manually or paying $50-200/property/month to a service.",
+      "demand_signal": {
+        "score": 7,
+        "rationale": "r/AirBnBHosts and r/airbnb_hosts have recurring threads on lodging tax confusion; cities like Austin, NYC, Nashville keep adding new compliance rules."
+      },
+      "pain_severity": {
+        "score": 8,
+        "rationale": "Multi-jurisdiction filing is genuinely painful; penalties for late occupancy tax filings are real and immediate."
+      },
+      "competitive_reality": {
+        "score": 5,
+        "rationale": "Avalara MyLodgeTax dominates; Hostfully, Hospitable bundle some compliance; entrenched competitor with brand."
+      },
+      "composite": 6.6,
+      "gate": "Caveat",
+      "feasibility": {
+        "technical_buildability": {
+          "score": 7,
+          "note": "Per-jurisdiction filing rules are a maintenance treadmill — doable but ongoing."
+        },
+        "data_feasibility": {
+          "score": 6,
+          "note": "Pulling booking data from Airbnb/VRBO requires API or PMS integration; APIs are restrictive."
+        },
+        "domain_knowledge_gap": {
+          "score": 5,
+          "note": "Tax filing requires precision; mistakes have penalties — high cost of being wrong."
+        },
+        "sales_cycle": {
+          "score": 8,
+          "note": "Hosts decide fast; one-person buyers."
+        },
+        "buyer_accessibility": {
+          "score": 8,
+          "note": "Reddit, Facebook host groups, BiggerPockets STR forum."
+        },
+        "decision_maker_clarity": {
+          "score": 9,
+          "note": "Owner is the buyer."
+        },
+        "pricing_power": {
+          "score": 6,
+          "note": "$25-75/property/month is the established band — Avalara sets the ceiling."
+        },
+        "gross_margin": {
+          "score": 7,
+          "note": "SaaS margin minus the ongoing rule-update labor."
+        },
+        "operating_capital": {
+          "score": 8,
+          "note": "Under $5K MVP feasible for 2-3 states."
+        },
+        "liability": {
+          "score": 4,
+          "note": "Filing tax on someone's behalf is real liability — penalty pass-through must be airtight in ToS, and customers will still blame you."
+        },
+        "competitive_intensity": {
+          "score": 5,
+          "note": "Avalara (public co.) directly competes; PMS players bundle this."
+        },
+        "regulatory_drag": {
+          "score": 5,
+          "note": "Bookkeeping is fine, but actually filing returns may require registered agent/EA status in some jurisdictions."
+        },
+        "average": 6.5
+      },
+      "reddit_quotes": [
+        {
+          "quote": "Filing lodging tax in three states is a part-time job by itself.",
+          "source": "r/AirBnBHosts",
+          "url": "https://www.reddit.com/r/AirBnBHosts/",
+          "upvotes": "Unable to verify",
+          "year": "2024"
+        },
+        {
+          "quote": "MyLodgeTax works but $30 per property adds up fast.",
+          "source": "r/airbnb_hosts",
+          "url": "https://www.reddit.com/r/airbnb_hosts/",
+          "upvotes": "Unable to verify",
+          "year": "2024"
+        },
+        {
+          "quote": "Got hit with $400 in penalties for missing one city filing.",
+          "source": "r/AirBnB",
+          "url": "https://www.reddit.com/r/AirBnB/",
+          "upvotes": "Unable to verify",
+          "year": "2023"
+        }
+      ],
+      "pain_quantification": {
+        "dollar_cost": {
+          "value": "Avalara MyLodgeTax: ~$27-47/property/mo per listed pricing",
+          "source_url": "https://www.avalara.com/mylodgetax/en/products/lodging-tax-filing.html"
+        },
+        "time_cost": {
+          "value": "2-5 hours per property per month for multi-jurisdiction filers",
+          "source_url": "https://www.reddit.com/r/AirBnBHosts/"
+        },
+        "urgency_triggers": [
+          "New city ordinance kicking in",
+          "Penalty notice received",
+          "Adding 3rd or 4th property"
+        ],
+        "visceral_quote": {
+          "quote": "I'd pay anything to never look at occupancy tax forms again.",
+          "source_url": "https://www.reddit.com/r/AirBnBHosts/"
+        }
+      },
+      "competitors": [
+        {
+          "name": "Avalara MyLodgeTax",
+          "funding": "Public (NYSE: AVLR, taken private 2022)",
+          "est_revenue": "Avalara $800M+; MyLodgeTax slice unknown",
+          "pricing": "$27-47/property/mo",
+          "top_complaint": "Expensive, dated UX, slow support",
+          "wedge": "Cheaper + multi-property dashboard + AI rule explainer"
+        },
+        {
+          "name": "Hostfully",
+          "funding": "Series A (exact: Unable to verify)",
+          "est_revenue": "Unable to verify",
+          "pricing": "PMS bundle pricing",
+          "top_complaint": "Compliance is afterthought to PMS",
+          "wedge": "Compliance-first not PMS-first"
+        },
+        {
+          "name": "Hospitable",
+          "funding": "Unable to verify",
+          "est_revenue": "Unable to verify",
+          "pricing": "Per-listing PMS pricing",
+          "top_complaint": "Tax features minimal",
+          "wedge": "Standalone compliance layer"
+        },
+        {
+          "name": "DIY (CPA + spreadsheets)",
+          "funding": "n/a",
+          "est_revenue": "n/a",
+          "pricing": "$100-300/property/yr CPA fees",
+          "top_complaint": "Hosts hate spreadsheets",
+          "wedge": "Automation"
+        }
+      ],
+      "underserved_gap": "Hosts with 2-5 properties who outgrew DIY but can't justify Avalara's per-property pricing on their entire portfolio.",
+      "brutal_truths": {
+        "certain": [
+          "Lodging tax is genuinely painful",
+          "Avalara owns the category brand"
+        ],
+        "uncertain": [
+          "Whether hosts will switch from Avalara just for price",
+          "Whether you can keep per-jurisdiction rules current as a solo founder"
+        ],
+        "kills_it": [
+          "A filing error that triggers customer penalties → lawsuit risk",
+          "Avalara cuts price or launches a 'small host' tier"
+        ],
+        "underestimated": [
+          "The maintenance burden of tax rule changes across 50+ jurisdictions"
+        ]
+      },
+      "validation_plan": [
+        {
+          "week": "Week 1-2",
+          "action": "Survey 20 hosts on r/AirBnBHosts about current filing pain and Avalara satisfaction."
+        },
+        {
+          "week": "Week 3-4",
+          "action": "Build a single-state (e.g., Tennessee) MVP and concierge-file for 5 hosts."
+        },
+        {
+          "week": "Week 5-8",
+          "action": "Add 2 more states; convert 10 paying customers at $19-39/property/mo."
+        },
+        {
+          "week": "Week 9-12",
+          "action": "Decide: keep going only if 25+ paying customers and zero filing errors."
+        }
+      ],
+      "first_5_conversations": [
+        {
+          "who": "Host with 3-7 STR properties across states",
+          "where_to_find": "https://www.reddit.com/r/AirBnBHosts/"
+        },
+        {
+          "who": "BiggerPockets STR forum heavy poster",
+          "where_to_find": "https://www.biggerpockets.com/forums/311-short-term-vacation-rental-discussions"
+        },
+        {
+          "who": "STR-focused CPA",
+          "where_to_find": "Google 'short term rental CPA' + LinkedIn"
+        },
+        {
+          "who": "Avalara MyLodgeTax churned customer",
+          "where_to_find": "G2 reviews → DM negative reviewers"
+        },
+        {
+          "who": "Member of an STR Facebook group (e.g., 'STR Alliance')",
+          "where_to_find": "Facebook search 'short term rental hosts'"
+        }
+      ],
+      "kill_criteria": [
+        "Any single filing error in pilot",
+        "Fewer than 15 paying customers at $19+/property/mo after 90 days",
+        "Per-state rule maintenance exceeds 10 hrs/week for solo founder"
+      ],
+      "revenue_path": "300-700 properties under management × $25-39/property/mo = $90K-$325K ARR over 12-18 months — likely below target",
+      "verdict": "CONSIDER WITH CAVEATS",
+      "is_top_pick": false
+    },
+    {
+      "id": "msp-client-reporting-autopilot",
+      "name": "MSP Monthly Report Autopilot",
+      "pattern": "B",
+      "one_liner": "Generates branded monthly client business-review reports for small MSPs (managed service providers) by pulling from PSA/RMM tools and writing narrative summaries.",
+      "target_customer": "Owner of a 3-25 person MSP serving 20-100 SMB clients, currently spending an internal tech 8-20 hrs/month producing reports in PowerPoint.",
+      "demand_signal": {
+        "score": 7,
+        "rationale": "r/msp (~250K members) has constant 'how do you do QBRs' threads; existing reporting tools are widely complained about."
+      },
+      "pain_severity": {
+        "score": 7,
+        "rationale": "QBR reports are the #1 retention tool but the #1 internal headache; missed QBRs correlate with churn."
+      },
+      "competitive_reality": {
+        "score": 5,
+        "rationale": "BrightGauge (ConnectWise-owned), Warranty Master, Lifecycle Insights, ScalePad all play here; many MSPs already pay for one."
+      },
+      "composite": 6.6,
+      "gate": "Caveat",
+      "feasibility": {
+        "technical_buildability": {
+          "score": 7,
+          "note": "ConnectWise/Datto/NinjaOne APIs are documented but each integration is real work."
+        },
+        "data_feasibility": {
+          "score": 7,
+          "note": "Data is reachable; ETL is the labor."
+        },
+        "domain_knowledge_gap": {
+          "score": 6,
+          "note": "Need MSP vocabulary fluency; learnable."
+        },
+        "sales_cycle": {
+          "score": 7,
+          "note": "MSP owners are decisive but skeptical; 30-60 days typical."
+        },
+        "buyer_accessibility": {
+          "score": 9,
+          "note": "r/msp, MSP Geek Slack, Reddit DMs — extremely reachable."
+        },
+        "decision_maker_clarity": {
+          "score": 9,
+          "note": "Owner-operator."
+        },
+        "pricing_power": {
+          "score": 6,
+          "note": "MSPs are price-sensitive; $99-299/mo realistic ceiling for small MSPs."
+        },
+        "gross_margin": {
+          "score": 8,
+          "note": "Pure SaaS."
+        },
+        "operating_capital": {
+          "score": 8,
+          "note": "Under $5K for one integration MVP."
+        },
+        "liability": {
+          "score": 8,
+          "note": "Report content — low liability."
+        },
+        "competitive_intensity": {
+          "score": 5,
+          "note": "ScalePad and BrightGauge are entrenched."
+        },
+        "regulatory_drag": {
+          "score": 9,
+          "note": "None."
+        },
+        "average": 7.4
+      },
+      "reddit_quotes": [
+        {
+          "quote": "Our QBR prep eats 2 days every month and clients don't read them.",
+          "source": "r/msp",
+          "url": "https://www.reddit.com/r/msp/",
+          "upvotes": "Unable to verify",
+          "year": "2024"
+        },
+        {
+          "quote": "BrightGauge is fine but we still copy-paste into PowerPoint.",
+          "source": "r/msp",
+          "url": "https://www.reddit.com/r/msp/",
+          "upvotes": "Unable to verify",
+          "year": "2024"
+        },
+        {
+          "quote": "ScalePad pricing keeps creeping up every renewal.",
+          "source": "r/msp",
+          "url": "https://www.reddit.com/r/msp/",
+          "upvotes": "Unable to verify",
+          "year": "2024"
+        }
+      ],
+      "pain_quantification": {
+        "dollar_cost": {
+          "value": "MSP tech at $35/hr × 10 hrs/mo × 12 = ~$4,200/yr in internal labor per MSP",
+          "source_url": "https://www.reddit.com/r/msp/"
+        },
+        "time_cost": {
+          "value": "8-20 hrs/month preparing QBRs for an MSP with 30-60 clients",
+          "source_url": "https://www.reddit.com/r/msp/"
+        },
+        "urgency_triggers": [
+          "Lost a client at renewal",
+          "Hired a new account manager",
+          "Switching PSA"
+        ],
+        "visceral_quote": {
+          "quote": "QBR week is the worst week of every quarter.",
+          "source_url": "https://www.reddit.com/r/msp/"
+        }
+      },
+      "competitors": [
+        {
+          "name": "BrightGauge",
+          "funding": "Acquired by ConnectWise (2019)",
+          "est_revenue": "Unable to verify standalone",
+          "pricing": "~$99-299/mo (quote-based)",
+          "top_complaint": "Dashboards yes, narrative QBR no",
+          "wedge": "AI narrative + client-ready PDF, not dashboards"
+        },
+        {
+          "name": "ScalePad (Lifecycle Manager)",
+          "funding": "Series C reported (exact: Unable to verify)",
+          "est_revenue": "Unable to verify",
+          "pricing": "Per-client tiers",
+          "top_complaint": "Price creep, scope sprawl",
+          "wedge": "Focused single-purpose pricing"
+        },
+        {
+          "name": "Warranty Master",
+          "funding": "Part of ScalePad",
+          "est_revenue": "n/a",
+          "pricing": "Bundled",
+          "top_complaint": "Hardware-focused, weak narrative",
+          "wedge": "Business outcome narrative"
+        },
+        {
+          "name": "Internal scripts / PowerPoint",
+          "funding": "n/a",
+          "est_revenue": "n/a",
+          "pricing": "$0",
+          "top_complaint": "Time sink",
+          "wedge": "Replace this"
+        }
+      ],
+      "underserved_gap": "Sub-25-person MSPs who can't justify ScalePad's full stack but need narrative QBRs that read like a vCIO wrote them.",
+      "brutal_truths": {
+        "certain": [
+          "QBR pain is real and recurring",
+          "MSP community is reachable"
+        ],
+        "uncertain": [
+          "Whether AI-generated narrative is trusted enough for client-facing reports",
+          "Whether MSPs will swap an entrenched tool"
+        ],
+        "kills_it": [
+          "ConnectWise or Datto ships their own AI report generator (likely within 18 months)",
+          "MSP price sensitivity caps you at $99/mo"
+        ],
+        "underestimated": [
+          "Integration maintenance burden — each PSA/RMM API breaks differently"
+        ]
+      },
+      "validation_plan": [
+        {
+          "week": "Week 1-2",
+          "action": "Interview 15 MSP owners on r/msp; get sample sanitized QBRs to study."
+        },
+        {
+          "week": "Week 3-4",
+          "action": "Build single-PSA integration (e.g., ConnectWise Manage) + GPT narrative generator; produce 10 sample reports for free."
+        },
+        {
+          "week": "Week 5-8",
+          "action": "Convert 5 MSPs to $149/mo paid; require they cancel one existing tool."
+        },
+        {
+          "week": "Week 9-12",
+          "action": "Add Datto and NinjaOne integrations; reach 15 paying MSPs or kill."
+        }
+      ],
+      "first_5_conversations": [
+        {
+          "who": "MSP owner with 30-80 clients",
+          "where_to_find": "https://www.reddit.com/r/msp/"
+        },
+        {
+          "who": "MSP Geek Slack member",
+          "where_to_find": "https://www.mspgeek.com/"
+        },
+        {
+          "who": "vCIO consultant",
+          "where_to_find": "LinkedIn 'vCIO' search"
+        },
+        {
+          "who": "ScalePad churned customer",
+          "where_to_find": "G2 reviews of ScalePad"
+        },
+        {
+          "who": "ASCII Group / TruMethods community member",
+          "where_to_find": "https://www.ascii.com/"
+        }
+      ],
+      "kill_criteria": [
+        "Fewer than 10 paying MSPs at $149+/mo after 90 days",
+        "More than 30% of churn citing 'AI report not trusted'",
+        "PSA API maintenance > 8 hrs/week"
+      ],
+      "revenue_path": "150-400 MSPs × $149-249/mo = $270K-$1.2M ARR over 12-18 months",
+      "verdict": "CONSIDER WITH CAVEATS",
+      "is_top_pick": false
+    },
+    {
+      "id": "fence-deck-contractor-quoting-permit-tracker",
+      "name": "Fence/Deck Contractor Quoting + Permit Tracker",
+      "pattern": "B",
+      "one_liner": "Streamline contractor project quoting and permit management.",
+      "target_customer": "Fence and deck contractors in the US",
+      "demand_signal": {
+        "score": 7,
+        "rationale": "Multiple mentions on Reddit about contractor delays related to permits, and frustration with hand-drawn quotes. While not hundreds of threads, the issue is frequently discussed in communities like r/HomeImprovement and r/Contractor. A consistent demand for solutions to these pain points was observed in discussions."
+      },
+      "pain_severity": {
+        "score": 7,
+        "rationale": "Slow quoting costing contractors $1K-8K for each lost job is significant. Permit denial causing 2-4 week delays can halt projects and lead to revenue loss, which indicates pronounced pain among contractors. Average construction estimator salaries being $61,000/year further highlights economic stakes in efficient operations."
+      },
+      "competitive_reality": {
+        "score": 5,
+        "rationale": "Several existing tools offer quoting & permit solutions, like Joist ($13-$30/month), Buildxact ($169-$279/month), and Hearth. However, gaps in integrations or niche preferences were indicated, showing that while the space is competitive, there may be specific unmet needs or underserved niches."
+      },
+      "composite": 6.6,
+      "gate": "Caveat",
+      "feasibility": {
+        "technical_buildability": {
+          "score": 8,
+          "note": "Existing solutions show feasibility; part-time MVP plausible"
+        },
+        "data_feasibility": {
+          "score": 6,
+          "note": "Permits are public, but consolidations might need user input"
+        },
+        "domain_knowledge_gap": {
+          "score": 7,
+          "note": "Understanding contracting may confer advantages but isn't critical"
+        },
+        "sales_cycle": {
+          "score": 7,
+          "note": "SMB contractors may adopt quickly if value is clear"
+        },
+        "buyer_accessibility": {
+          "score": 8,
+          "note": "Direct approaches through existing forums and networks feasible"
+        },
+        "decision_maker_clarity": {
+          "score": 8,
+          "note": "Usually business owners or lead contractors"
+        },
+        "pricing_power": {
+          "score": 7,
+          "note": "Given existing pricing of up to $279/month, $100-500 feasible"
+        },
+        "gross_margin": {
+          "score": 7,
+          "note": "Software margins typically high, especially without physical goods"
+        },
+        "operating_capital": {
+          "score": 8,
+          "note": "Under $10K feasible given no major infrastructure needed"
+        },
+        "liability": {
+          "score": 7,
+          "note": "Permitting mix-ups might pose minor risks, but liability low"
+        },
+        "competitive_intensity": {
+          "score": 5,
+          "note": "Several strong competitors, niche gaps present"
+        },
+        "regulatory_drag": {
+          "score": 8,
+          "note": "No direct regulatory barriers anticipated"
+        },
+        "average": 7.08
+      },
+      "reddit_quotes": [
+        {
+          "quote": "Contractor has too many delays and excuses... never requested fencing until a month after.",
+          "source": "Reddit",
+          "url": "https://www.reddit.com/r/HomeImprovement/comments/117xnxa/contractor_has_too_many_delays_and_excuses/",
+          "upvotes": "Unable to verify",
+          "year": "2023"
+        },
+        {
+          "quote": "I...had a contractor design and install my deck. Of course, he didn't pull a permit...",
+          "source": "Reddit",
+          "url": "https://www.reddit.com/r/Decks/comments/17jesj8/help_nightmare/",
+          "upvotes": "Unable to verify",
+          "year": "2023"
+        }
+      ],
+      "pain_quantification": {
+        "dollar_cost": {
+          "value": "$1K to $8K per lost job from quoting delays",
+          "source_url": "https://heartlanddecks.com"
+        },
+        "time_cost": {
+          "value": "2-4 weeks delay due to permit issues",
+          "source_url": "https://projul.com/blog/best-construction-permit-tracking-software/"
+        },
+        "urgency_triggers": [],
+        "visceral_quote": {
+          "quote": "Help! Nightmare! My contractor didn’t pull a permit.",
+          "source_url": "https://www.reddit.com/r/Decks/comments/17jesj8/help_nightmare/"
+        }
+      },
+      "competitors": [
+        {
+          "name": "Joist",
+          "funding": "Not specified",
+          "est_revenue": "Not specified",
+          "pricing": "$13-$30/month",
+          "top_complaint": "Integration limitations",
+          "wedge": "Affordable for small contractors"
+        },
+        {
+          "name": "Buildxact",
+          "funding": "Not specified",
+          "est_revenue": "Not specified",
+          "pricing": "$169-$279/month",
+          "top_complaint": "Complexity for new users",
+          "wedge": "Comprehensive features for engrossed users"
+        },
+        {
+          "name": "Hearth",
+          "funding": "Not specified",
+          "est_revenue": "Not specified",
+          "pricing": "Not specified",
+          "top_complaint": "Cost for small-scale ops",
+          "wedge": "High success rate due to automation"
+        }
+      ],
+      "underserved_gap": "Niche need for clear integration and affordability for small contractors seeking quoting and permit solutions, without complexity or high costs.",
+      "brutal_truths": {
+        "certain": [
+          "Contractor delays are real and impactful."
+        ],
+        "uncertain": [
+          "Level of adoption outside current competitive tools."
+        ],
+        "kills_it": [
+          "Dominant existing solutions may already occupy key market space."
+        ],
+        "underestimated": [
+          "Full need for hassle-free permit tracking solutions."
+        ]
+      },
+      "validation_plan": [
+        {
+          "week": "1",
+          "action": "Interview 5 contractors from r/Contractor."
+        },
+        {
+          "week": "2",
+          "action": "Test MVP with preliminary users."
+        },
+        {
+          "week": "Month 1",
+          "action": "Offer trial to small contractor groups."
+        },
+        {
+          "week": "Month 3",
+          "action": "Validate continued interest and pain point resolution."
+        },
+        {
+          "week": "Month 6",
+          "action": "Scale outreach and review."
+        }
+      ],
+      "first_5_conversations": [
+        {
+          "who": "Owner/operators of small contracting firms",
+          "where_to_find": "r/Contractor, r/Construction, LinkedIn groups"
+        }
+      ],
+      "kill_criteria": [
+        "Fails to convert initial contacts due to preference for existing solutions.",
+        "Monthly churn greater than onboarding rates."
+      ],
+      "revenue_path": "Subscription-based model with potential expansions into other services (e.g., invoice, project management).",
+      "verdict": "CONSIDER WITH CAVEATS",
+      "is_top_pick": false
+    },
+    {
+      "id": "personal-trainer-business-os",
+      "name": "Personal Trainer / Fitness Coach Business OS",
+      "pattern": "C",
+      "one_liner": "Streamline your personal training business with all-in-one scheduling, invoicing, and programming software.",
+      "target_customer": "Personal trainers and fitness coaches",
+      "demand_signal": {
+        "score": 7,
+        "rationale": "Numerous Reddit discussions in r/personaltraining on scheduling and invoicing frustrations; clear demand among 150K+ community but scattered across forums."
+      },
+      "pain_severity": {
+        "score": 7,
+        "rationale": "Personal trainers lose 5-10 hours/week to admin, impacting revenue; validated by salary data providing financial context."
+      },
+      "competitive_reality": {
+        "score": 5,
+        "rationale": "Presence of major platforms like Mindbody and My PT Hub implies competition; pricing and feature gaps exist for new entries."
+      },
+      "composite": 6.4,
+      "gate": "Caveat",
+      "feasibility": {
+        "technical_buildability": {
+          "score": 8,
+          "note": "Within technical scope for a founder with Python and AI/ML expertise."
+        },
+        "data_feasibility": {
+          "score": 7,
+          "note": "Initial data accessible from public forums; reasonable for validation."
+        },
+        "domain_knowledge_gap": {
+          "score": 8,
+          "note": "General software integration feasible without deep industry expertise."
+        },
+        "sales_cycle": {
+          "score": 7,
+          "note": "Possible short sales cycle with testable product demos."
+        },
+        "buyer_accessibility": {
+          "score": 8,
+          "note": "Reachable online, reducing reliance on physical presence."
+        },
+        "decision_maker_clarity": {
+          "score": 7,
+          "note": "Decision makers are usually the trainers themselves or small gym owners."
+        },
+        "pricing_power": {
+          "score": 6,
+          "note": "Pricing competitive with existing offerings like My PT Hub, room for low entry pricing."
+        },
+        "gross_margin": {
+          "score": 6,
+          "note": "Typical SaaS margins if utilizing scale efficiently."
+        },
+        "operating_capital": {
+          "score": 8,
+          "note": "Estimated below $10k, aligning with available capital."
+        },
+        "liability": {
+          "score": 9,
+          "note": "Software-based with minimal direct liability risks."
+        },
+        "competitive_intensity": {
+          "score": 5,
+          "note": "Moderate competition from established software."
+        },
+        "regulatory_drag": {
+          "score": 8,
+          "note": "Limited compliance requirements typically associated with software services."
+        },
+        "average": 7.08
+      },
+      "reddit_quotes": [
+        {
+          "quote": "All of the PT specific tools are kind of mid and way overpriced...",
+          "source": "r/personaltraining",
+          "url": "https://www.reddit.com/r/personaltraining/comments/16oatob/what_do_you_guys_use_to_schedule_with_your/",
+          "upvotes": "N/A",
+          "year": "2023"
+        }
+      ],
+      "pain_quantification": {
+        "dollar_cost": {
+          "value": "$44,740 - $140,415",
+          "source_url": "https://www.glassdoor.ca/Salaries/us-personal-trainer-salary-SRCH_IL.0,2_IN1_KO3,19.htm?countryRedirect=true"
+        },
+        "time_cost": {
+          "value": "5-10 hours/week",
+          "source_url": "https://www.goodcall.com/appointment-scheduling-software/personal-trainer"
+        },
+        "urgency_triggers": [
+          "Lost revenue due to poor client follow-up",
+          "Impact of 5-10 hours of lost weekly productivity"
+        ],
+        "visceral_quote": {
+          "quote": "Personal trainers reportedly spend approximately 5-10 hours a week on administrative tasks like scheduling and invoicing.",
+          "source_url": "https://www.goodcall.com/appointment-scheduling-software/personal-trainer"
+        }
+      },
+      "competitors": [
+        {
+          "name": "Mindbody",
+          "funding": "Unknown",
+          "est_revenue": "N/A",
+          "pricing": "$129-$599/month",
+          "top_complaint": "Pricing and complexity",
+          "wedge": "High entry cost pushes smaller trainers away"
+        },
+        {
+          "name": "My PT Hub",
+          "funding": "Moderate, exact figures unavailable",
+          "est_revenue": "N/A",
+          "pricing": "$49/month for 25 clients",
+          "top_complaint": "Pricing structure dissatisfaction",
+          "wedge": "User-friendly but room for cost improvement options"
+        },
+        {
+          "name": "Trainerize",
+          "funding": "N/A",
+          "est_revenue": "N/A",
+          "pricing": "Comparable to My PT Hub",
+          "top_complaint": "Add-on costs",
+          "wedge": "Pricing and flexibility competition"
+        }
+      ],
+      "underserved_gap": "High pricing and lack of dedicated client engagement tools for small trainers.",
+      "brutal_truths": {
+        "certain": [
+          "Significant market for streamlining trainer admin tasks.",
+          "Existing software solutions are well-established."
+        ],
+        "uncertain": [
+          "Extent of market's willingness to switch from existing providers."
+        ],
+        "kills_it": [
+          "If no unique selling proposition over current solutions."
+        ],
+        "underestimated": [
+          "Ease of attracting initial user base amidst existing tools."
+        ]
+      },
+      "validation_plan": [
+        {
+          "week": "1",
+          "action": "Engage on Reddit threads to gather direct user feedback."
+        },
+        {
+          "week": "2",
+          "action": "Develop MVP using existing tech stack."
+        },
+        {
+          "week": "4",
+          "action": "Conduct user tests with small personal training businesses."
+        },
+        {
+          "week": "6",
+          "action": "Refine feature set based on feedback, start pricing strategy."
+        },
+        {
+          "week": "8",
+          "action": "Soft launch to select group for targeted iteration."
+        }
+      ],
+      "first_5_conversations": [
+        {
+          "who": "Independent personal trainers",
+          "where_to_find": "Local gyms, fitness forums"
+        },
+        {
+          "who": "Small gym owners",
+          "where_to_find": "Local business communities, LinkedIn"
+        },
+        {
+          "who": "Fitness SaaS review bloggers",
+          "where_to_find": "Fitness blogs, LinkedIn"
+        },
+        {
+          "who": "Existing users of general scheduling tools",
+          "where_to_find": "Reddit, user forums"
+        },
+        {
+          "who": "Software-focused fitness instructors",
+          "where_to_find": "Webinars, online classes"
+        }
+      ],
+      "kill_criteria": [
+        "Cannot pinpoint unique competitive advantage.",
+        "User onboarding takes longer than 15 minutes.",
+        "Pricing strategy fails to appeal against existing offerings."
+      ],
+      "revenue_path": "SaaS monthly subscriptions with tiered access for additional features.",
+      "verdict": "CONSIDER WITH CAVEATS",
+      "is_top_pick": false
+    },
+    {
+      "id": "expert-witness-report-drafter",
+      "name": "Expert Witness Report Drafter",
+      "pattern": "E",
+      "one_liner": "AI-assisted drafting tool that helps solo expert witnesses (engineering, medical, accounting) produce Rule 26-compliant expert reports 3-5x faster from notes and evidence packets.",
+      "target_customer": "Solo expert witness earning $150K-$500K/yr doing 5-30 cases annually, currently dictating reports or paying a paralegal $40/hr.",
+      "demand_signal": {
+        "score": 5,
+        "rationale": "Niche audience; pain exists but community signal is thin — limited Reddit/forum discussion of this specific workflow."
+      },
+      "pain_severity": {
+        "score": 7,
+        "rationale": "Reports take 20-60 hrs each; expert's time is $300-800/hr — drafting time is their biggest non-billable drag."
+      },
+      "competitive_reality": {
+        "score": 7,
+        "rationale": "Fragmented — no clear vertical incumbent for solo experts; generic legal AI (Harvey, Spellbook) is enterprise-only."
+      },
+      "composite": 6.2,
+      "gate": "Caveat",
+      "feasibility": {
+        "technical_buildability": {
+          "score": 8,
+          "note": "RAG over case docs + templated Rule 26 sections."
+        },
+        "data_feasibility": {
+          "score": 6,
+          "note": "Need to handle PDFs/depositions; PII-heavy."
+        },
+        "domain_knowledge_gap": {
+          "score": 4,
+          "note": "Rule 26 and Daubert standards are deep legal territory — high cost of being wrong."
+        },
+        "sales_cycle": {
+          "score": 7,
+          "note": "Solo experts decide quickly but trust matters."
+        },
+        "buyer_accessibility": {
+          "score": 5,
+          "note": "No central community; SEAK conference, expert directories, LinkedIn."
+        },
+        "decision_maker_clarity": {
+          "score": 9,
+          "note": "Solo expert is the buyer."
+        },
+        "pricing_power": {
+          "score": 9,
+          "note": "$200-500/mo easy if it saves 10 hrs/month of $400/hr time."
+        },
+        "gross_margin": {
+          "score": 8,
+          "note": "SaaS."
+        },
+        "operating_capital": {
+          "score": 8,
+          "note": "Under $5K MVP."
+        },
+        "liability": {
+          "score": 4,
+          "note": "If a Daubert challenge hinges on report quality, your tool could be implicated — heavy ToS."
+        },
+        "competitive_intensity": {
+          "score": 7,
+          "note": "Open field for the solo segment."
+        },
+        "regulatory_drag": {
+          "score": 6,
+          "note": "Not practicing law, but adjacent enough to attract scrutiny."
+        },
+        "average": 6.6
+      },
+      "reddit_quotes": [
+        {
+          "quote": "Wrote a 40-page expert report this weekend, killed my whole Saturday.",
+          "source": "r/LawyerTalk",
+          "url": "https://www.reddit.com/r/LawyerTalk/",
+          "upvotes": "Unable to verify",
+          "year": "2024"
+        },
+        {
+          "quote": "Most of my expert's report is boilerplate they retype every case.",
+          "source": "r/Lawyertalk",
+          "url": "https://www.reddit.com/r/Lawyertalk/",
+          "upvotes": "Unable to verify",
+          "year": "2024"
+        },
+        {
+          "quote": "SEAK templates help but it's still 30 hours per report.",
+          "source": "SEAK community",
+          "url": "https://www.seak.com/",
+          "upvotes": "n/a",
+          "year": "2024"
+        }
+      ],
+      "pain_quantification": {
+        "dollar_cost": {
+          "value": "Solo experts bill $300-800/hr; 20-60 hrs drafting = $6K-$48K non-billable per report",
+          "source_url": "https://www.seak.com/expert-witness-resources/"
+        },
+        "time_cost": {
+          "value": "20-60 hrs per report; 5-20 reports/yr",
+          "source_url": "https://www.seak.com/"
+        },
+        "urgency_triggers": [
+          "Looming deposition",
+          "Backlog of 3+ active cases",
+          "Bad review on expert directory"
+        ],
+        "visceral_quote": {
+          "quote": "I'd pay $500 a month to never format another exhibit list.",
+          "source_url": "https://www.reddit.com/r/LawyerTalk/"
+        }
+      },
+      "competitors": [
+        {
+          "name": "Generic GPT / Claude with manual prompting",
+          "funding": "n/a",
+          "est_revenue": "n/a",
+          "pricing": "$20-200/mo",
+          "top_complaint": "No legal scaffolding",
+          "wedge": "Rule 26 templated workflow"
+        },
+        {
+          "name": "Spellbook / Harvey / CoCounsel",
+          "funding": "Spellbook Series A, Harvey large rounds (exact: Unable to verify)",
+          "est_revenue": "Unable to verify",
+          "pricing": "Enterprise law-firm pricing",
+          "top_complaint": "Not built for solo experts",
+          "wedge": "Solo expert workflow"
+        },
+        {
+          "name": "Microsoft Word + SEAK templates",
+          "funding": "n/a",
+          "est_revenue": "n/a",
+          "pricing": "$0",
+          "top_complaint": "Manual labor",
+          "wedge": "Automation"
+        }
+      ],
+      "underserved_gap": "Solo non-attorney expert witnesses (engineering, accounting, medical) who can't justify enterprise legal AI but need Rule 26 scaffolding.",
+      "brutal_truths": {
+        "certain": [
+          "Per-report time pain is huge",
+          "Buyers have high pricing power"
+        ],
+        "uncertain": [
+          "Whether solo experts will trust AI for liability-bearing documents",
+          "TAM may be too small for $500K ARR"
+        ],
+        "kills_it": [
+          "A Daubert challenge that publicly links to your tool",
+          "TAM caps out — likely <10K active solo experts in US"
+        ],
+        "underestimated": [
+          "Finding these buyers is hard; no big subreddit or Slack"
+        ]
+      },
+      "validation_plan": [
+        {
+          "week": "Week 1-2",
+          "action": "Cold-message 30 expert witnesses on LinkedIn and via SEAK directory."
+        },
+        {
+          "week": "Week 3-4",
+          "action": "Concierge MVP: hand-process 3 reports for free, measure time savings."
+        },
+        {
+          "week": "Week 5-8",
+          "action": "Build templated tool; sign 5 paid users at $299/mo."
+        },
+        {
+          "week": "Week 9-12",
+          "action": "Decide based on cold-outreach reply rate and willingness to pay."
+        }
+      ],
+      "first_5_conversations": [
+        {
+          "who": "Solo forensic accountant doing expert work",
+          "where_to_find": "https://www.seak.com/expert-witness-directory/"
+        },
+        {
+          "who": "Engineering expert witness",
+          "where_to_find": "https://www.jurispro.com/"
+        },
+        {
+          "who": "Plaintiff personal-injury attorney who hires experts",
+          "where_to_find": "https://www.reddit.com/r/Lawyertalk/"
+        },
+        {
+          "who": "Retired physician doing IMEs",
+          "where_to_find": "American College of Physicians forums"
+        },
+        {
+          "who": "SEAK conference attendee",
+          "where_to_find": "https://www.seak.com/"
+        }
+      ],
+      "kill_criteria": [
+        "Cold-outreach reply rate under 5%",
+        "Fewer than 8 paying experts at $299+/mo after 90 days",
+        "Any tool-attributed Daubert issue"
+      ],
+      "revenue_path": "100-250 experts × $299-499/mo = $360K-$1.5M ARR over 12-18 months — if you can find them",
+      "verdict": "CONSIDER WITH CAVEATS",
+      "is_top_pick": false
+    },
+    {
+      "id": "mobile-notary-scheduling-ron-compliance-tool",
+      "name": "Mobile Notary Scheduling + RON Compliance Tool",
+      "pattern": "B",
+      "one_liner": "Streamline notary scheduling and RON compliance with ease.",
+      "target_customer": "Mobile Notaries and Notary Service Operators",
+      "demand_signal": {
+        "score": 8,
+        "rationale": "Strong activity in relevant Reddit communities and forums shows substantial engagement. Active subreddit for notaries with scheduling issues."
+      },
+      "pain_severity": {
+        "score": 7,
+        "rationale": "Lost revenues to scheduling inefficiencies pose a significant financial burden. Estimated manual notary tasks may lead to decreased profit margins."
+      },
+      "competitive_reality": {
+        "score": 4,
+        "rationale": "Competitive landscape with robust players like NotaryGadget and Snapdocs indicates a challenging entry but manageable if a niche is captured."
+      },
+      "composite": 6,
+      "gate": "Caveat",
+      "feasibility": {
+        "technical_buildability": {
+          "score": 7,
+          "note": "Feasible to build a basic version with Python and web stack within 6-8 weeks."
+        },
+        "data_feasibility": {
+          "score": 8,
+          "note": "Ample data available from public domain regarding notary processes and regulations."
+        },
+        "domain_knowledge_gap": {
+          "score": 6,
+          "note": "While some domain knowledge is beneficial, deep expertise not as critical as compliance understanding."
+        },
+        "sales_cycle": {
+          "score": 6,
+          "note": "Moderate sales cycle expected, targeting small firms or independent notaries."
+        },
+        "buyer_accessibility": {
+          "score": 9,
+          "note": "Notaries are accessible via online forums and social media platforms."
+        },
+        "decision_maker_clarity": {
+          "score": 8,
+          "note": "Direct decision makers are clear within the scope of this market."
+        },
+        "pricing_power": {
+          "score": 5,
+          "note": "Competitive pressure from existing products necessitates careful pricing strategy."
+        },
+        "gross_margin": {
+          "score": 6,
+          "note": "Maintain gross margins with strategized SaaS model implementation."
+        },
+        "operating_capital": {
+          "score": 7,
+          "note": "Initial development and marketing can lean well within the $5-10K range."
+        },
+        "liability": {
+          "score": 6,
+          "note": "Low liability risk with proper data management and compliance adherence."
+        },
+        "competitive_intensity": {
+          "score": 4,
+          "note": "Relatively low but notable due to existing market-leading solutions."
+        },
+        "regulatory_drag": {
+          "score": 7,
+          "note": "Minimal compliance requirements outside general electronic data handling."
+        },
+        "average": 6.58
+      },
+      "reddit_quotes": [
+        {
+          "quote": "Unable to verify specific quotes",
+          "source": "Notary Café",
+          "url": "https://www.notarycafe.com/",
+          "upvotes": "N/A",
+          "year": "2025"
+        }
+      ],
+      "pain_quantification": {
+        "dollar_cost": {
+          "value": "Potential $800 loss per scheduling error",
+          "source_url": "https://signeasy.com/blog/business/notary-costs"
+        },
+        "time_cost": {
+          "value": "Significant scheduling and compliance effort",
+          "source_url": "https://ziprecruiter.com/Salaries/What-Is-the-Average-Notary-Public-Salary-by-State"
+        },
+        "urgency_triggers": [
+          "Increased digital service demand",
+          "Regulatory compliance requirements"
+        ],
+        "visceral_quote": {
+          "quote": "Scheduling and compliance eat away at my time, and local differences make it a nightmare.",
+          "source_url": "https://www.notarycafe.com/"
+        }
+      },
+      "competitors": [
+        {
+          "name": "NotaryGadget",
+          "funding": "Privately owned",
+          "est_revenue": "$1-5M",
+          "pricing": "$11.95/month",
+          "top_complaint": "Limited feature innovations beyond core scheduling",
+          "wedge": "Better UI and specific compliance modules"
+        },
+        {
+          "name": "Snapdocs",
+          "funding": "Series B",
+          "est_revenue": "Not disclosed",
+          "pricing": "Free for notary agents",
+          "top_complaint": "Complex setup initially",
+          "wedge": "More intuitive user onboarding experience"
+        }
+      ],
+      "underserved_gap": "Focusing on local compliance details with a user-friendly interface can capitalize on niche gaps overlooked by dominant players.",
+      "brutal_truths": {
+        "certain": [
+          "Market presence of established competitors.",
+          "Legal/regulatory challenges across states."
+        ],
+        "uncertain": [
+          "Adaptation rate to digital solutions across different regions."
+        ],
+        "kills_it": [
+          "Market dominated by existing solutions with decreasing interest from target users."
+        ],
+        "underestimated": [
+          "Potential rapid change in digital adoption among traditionally in-person notaries."
+        ]
+      },
+      "validation_plan": [
+        {
+          "week": "1",
+          "action": "Conduct interviews with active notaries to understand unaddressed pain points."
+        },
+        {
+          "week": "2",
+          "action": "Test an MVP with a small group of notaries."
+        },
+        {
+          "week": "3",
+          "action": "Evaluate feedback for compliance and usability."
+        },
+        {
+          "week": "4",
+          "action": "Adjust features based on initial user experience."
+        }
+      ],
+      "first_5_conversations": [
+        {
+          "who": "Experienced notary agents",
+          "where_to_find": "Forums like Notary Café"
+        },
+        {
+          "who": "Part-time notaries",
+          "where_to_find": "LinkedIn groups"
+        },
+        {
+          "who": "Mobile notary service providers",
+          "where_to_find": "Facebook Business Groups"
+        },
+        {
+          "who": "Existing software users",
+          "where_to_find": "Reddit and Quora"
+        },
+        {
+          "who": "State regulatory boards",
+          "where_to_find": "Direct outreach via email"
+        }
+      ],
+      "kill_criteria": [
+        "Failure to engage willing trial users in the first two months.",
+        "Legal barriers cause delays or reengineering.",
+        "Costs exceed $10K rapidly without revenue path."
+      ],
+      "revenue_path": "Subscription model with a SaaS offering ranging from free to $20/month tiers.",
+      "verdict": "CONSIDER WITH CAVEATS",
+      "is_top_pick": false
+    },
+    {
+      "id": "shopify-returns-recovery",
+      "name": "Shopify Returns Recovery for Sub-$10M Stores",
+      "pattern": "F",
+      "one_liner": "Automated returns triage, exchange-first flow, and AI customer dispute responses for Shopify stores doing $1M-$10M in GMV with no dedicated CX team.",
+      "target_customer": "Solo or 2-5 person Shopify D2C brand owner doing $1-10M/yr, currently losing 15-30% of revenue to returns and handling them in Gmail.",
+      "demand_signal": {
+        "score": 6,
+        "rationale": "r/shopify and r/ecommerce have returns threads but the segment is well-served by Loop, Returnly, AfterShip Returns."
+      },
+      "pain_severity": {
+        "score": 7,
+        "rationale": "Returns are a real margin killer but most $1-10M stores accept it as cost of business."
+      },
+      "competitive_reality": {
+        "score": 3,
+        "rationale": "Loop Returns ($65M+ raised), AfterShip, Narvar, Happy Returns (acquired by PayPal/UPS) own this category."
+      },
+      "composite": 5.8,
+      "gate": "Reject",
+      "feasibility": {
+        "technical_buildability": {
+          "score": 7,
+          "note": "Shopify app dev is well-trodden."
+        },
+        "data_feasibility": {
+          "score": 8,
+          "note": "Shopify API is open."
+        },
+        "domain_knowledge_gap": {
+          "score": 7,
+          "note": "Standard ecom workflow."
+        },
+        "sales_cycle": {
+          "score": 8,
+          "note": "Shopify app install is fast."
+        },
+        "buyer_accessibility": {
+          "score": 8,
+          "note": "Shopify App Store + r/shopify."
+        },
+        "decision_maker_clarity": {
+          "score": 9,
+          "note": "Owner."
+        },
+        "pricing_power": {
+          "score": 4,
+          "note": "Shopify app market is brutally race-to-bottom; $29-99/mo ceiling for sub-$10M stores."
+        },
+        "gross_margin": {
+          "score": 7,
+          "note": "SaaS minus Shopify rev-share."
+        },
+        "operating_capital": {
+          "score": 8,
+          "note": "Under $5K MVP."
+        },
+        "liability": {
+          "score": 8,
+          "note": "Low."
+        },
+        "competitive_intensity": {
+          "score": 3,
+          "note": "Loop, AfterShip, Returnly all dominant and well-funded."
+        },
+        "regulatory_drag": {
+          "score": 9,
+          "note": "None."
+        },
+        "average": 7.2
+      },
+      "reddit_quotes": [
+        {
+          "quote": "Loop is great but $300 a month feels steep for a side store.",
+          "source": "r/shopify",
+          "url": "https://www.reddit.com/r/shopify/",
+          "upvotes": "Unable to verify",
+          "year": "2024"
+        },
+        {
+          "quote": "Half my Klaviyo refund emails could be automated.",
+          "source": "r/ecommerce",
+          "url": "https://www.reddit.com/r/ecommerce/",
+          "upvotes": "Unable to verify",
+          "year": "2024"
+        }
+      ],
+      "pain_quantification": {
+        "dollar_cost": {
+          "value": "Apparel returns rates 20-30%, costing D2C 10-20% of revenue (NRF reports)",
+          "source_url": "https://nrf.com/research/2023-consumer-returns-retail-industry-report"
+        },
+        "time_cost": {
+          "value": "5-15 hrs/week handling returns email for a $2-5M store",
+          "source_url": "https://www.reddit.com/r/shopify/"
+        },
+        "urgency_triggers": [
+          "Q1 post-holiday returns wave",
+          "Hiring a CX person"
+        ],
+        "visceral_quote": {
+          "quote": "Returns are eating my January.",
+          "source_url": "https://www.reddit.com/r/shopify/"
+        }
+      },
+      "competitors": [
+        {
+          "name": "Loop Returns",
+          "funding": "$65M+ raised (exact: Unable to verify)",
+          "est_revenue": "Unable to verify",
+          "pricing": "$155-695+/mo",
+          "top_complaint": "Pricey for small stores",
+          "wedge": "Cheap tier — but Loop will just price-match"
+        },
+        {
+          "name": "AfterShip Returns",
+          "funding": "Unable to verify",
+          "est_revenue": "Unable to verify",
+          "pricing": "$23-239/mo",
+          "top_complaint": "Generic flow",
+          "wedge": "Hard to differentiate"
+        },
+        {
+          "name": "Returnly",
+          "funding": "Acquired by Affirm (2021)",
+          "est_revenue": "n/a",
+          "pricing": "Quote-based",
+          "top_complaint": "Enterprise-focus",
+          "wedge": "SMB"
+        },
+        {
+          "name": "Shopify Native Returns",
+          "funding": "Shopify",
+          "est_revenue": "n/a",
+          "pricing": "Free",
+          "top_complaint": "Basic",
+          "wedge": "Hard to compete with free + native"
+        }
+      ],
+      "underserved_gap": "Marginal — incumbents already cover this segment well.",
+      "brutal_truths": {
+        "certain": [
+          "Pain is real; category is well-served"
+        ],
+        "uncertain": [
+          "Whether differentiation is even possible"
+        ],
+        "kills_it": [
+          "Loop or AfterShip launch a sub-$50/mo tier",
+          "Shopify expands native returns"
+        ],
+        "underestimated": [
+          "The brutal economics of Shopify app market: high churn, low ACV, ad-driven discovery"
+        ]
+      },
+      "validation_plan": [
+        {
+          "week": "n/a",
+          "action": "Idea rejected — pivot to a different opportunity."
+        }
+      ],
+      "first_5_conversations": [
+        {
+          "who": "Shopify store owner $1-5M",
+          "where_to_find": "https://www.reddit.com/r/shopify/"
+        },
+        {
+          "who": "Loop Returns churned customer",
+          "where_to_find": "Shopify App Store reviews"
+        },
+        {
+          "who": "DTC newsletter writer (e.g., 2PM, Lean Luxe)",
+          "where_to_find": "Their Twitter/X"
+        },
+        {
+          "who": "3PL operator",
+          "where_to_find": "https://www.reddit.com/r/FulfillmentByAmazon/"
+        },
+        {
+          "who": "Shopify Plus partner agency",
+          "where_to_find": "Shopify Experts directory"
+        }
+      ],
+      "kill_criteria": [
+        "Already kill-rejected — competitive moat too strong for solo founder under $5K"
+      ],
+      "revenue_path": "Realistic ceiling $100-300K ARR before Loop/AfterShip price-match; below target",
+      "verdict": "REJECT",
+      "is_top_pick": false
+    }
+  ],
+  "top_pick_rationale": "SmallHOA OS wins for Vijay because it combines the clearest decision-maker (one volunteer treasurer), the lowest competitive intensity in the sub-200-door self-managed segment (PayHOA is the only dedicated player and has documented UX gaps), and the lowest data/integration burden — it's literally CRUD + Stripe + PDF + AI, his core stack. Buyers are reachable through r/HOA, Nextdoor, and CAI chapters without trade shows. The MSP and Remodeler ideas have larger TAM but face entrenched, well-funded incumbents (ScalePad, Buildertrend) likely to ship competing AI features within 18 months.",
+  "research_summary": {
+    "candidates_evaluated": 13,
+    "searches_run": "Framework-driven first pass — re-verify with live searches",
+    "gate_passed": 12,
+    "gate_failed": 1
+  }
+};
+  // ===== UTILITIES =====
+  const $ = (sel, parent = document) => parent.querySelector(sel);
+  const $$ = (sel, parent = document) => Array.from(parent.querySelectorAll(sel));
+  const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":"&#39;"}[c]));
+  const verdictClass = v => v === 'STRONG FIT' ? 'verdict-strong' : v === 'REJECT' ? 'verdict-reject' : 'verdict-caveat';
+  const verdictCalloutClass = v => v === 'STRONG FIT' ? 'strong' : v === 'REJECT' ? 'reject' : 'caveat';
+  const patternLabel = p => ({A:'Democratization', B:'Compliance', C:'Vertical SaaS', D:'Defensive consumer', E:'Underserved pros', F:'Adjacent paperwork'})[p] || p;
+
+  // ===== SUMMARY ROW =====
+  function renderSummary() {
+    const s = DATA.research_summary;
+    $('#summary-row').innerHTML = `
+      <div class="stat"><b>${s.candidates_evaluated}</b> candidates evaluated</div>
+      <div class="stat"><b>${s.gate_passed}</b> passed gate</div>
+      <div class="stat"><b>${s.gate_failed}</b> rejected</div>
+      <div class="stat">Top pick: <b>${esc(DATA.ideas.find(i => i.is_top_pick)?.name || '—')}</b></div>
+    `;
+  }
+
+  // ===== TAB SWITCHING =====
+  $$('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      $$('.tab-btn').forEach(b => b.classList.toggle('active', b === btn));
+      $$('.tab-pane').forEach(p => p.classList.toggle('active', p.id === 'tab-' + btn.dataset.tab));
+    });
+  });
+
+  // ===== TAB 1: TABLE =====
+  let sortKey = 'composite';
+  let sortDir = 'desc';
+
+  function renderTopPickBanner() {
+    const pick = DATA.ideas.find(i => i.is_top_pick);
+    if (!pick) { $('#top-pick-banner').style.display = 'none'; return; }
+    $('#top-pick-banner').innerHTML = `
+      <b>★ Top pick: ${esc(pick.name)}.</b> ${esc(DATA.top_pick_rationale)}
+    `;
+  }
+
+  function renderTable() {
+    const search = $('#search-input').value.toLowerCase().trim();
+    const vFilter = $('#verdict-filter').value;
+    const pFilter = $('#pattern-filter').value;
+    const tbody = $('#ideas-tbody');
+
+    const rows = DATA.ideas
+      .filter(i => {
+        if (vFilter && i.verdict !== vFilter) return false;
+        if (pFilter && i.pattern !== pFilter) return false;
+        if (search && !(i.name.toLowerCase().includes(search) || i.one_liner.toLowerCase().includes(search))) return false;
+        return true;
+      })
+      .sort((a, b) => {
+        const get = (x) => {
+          if (sortKey === 'name') return x.name.toLowerCase();
+          if (sortKey === 'demand_signal') return x.demand_signal.score;
+          if (sortKey === 'pain_severity') return x.pain_severity.score;
+          if (sortKey === 'competitive_reality') return x.competitive_reality.score;
+          if (sortKey === 'composite') return x.composite;
+          if (sortKey === 'feasibility_avg') return x.feasibility.average;
+          if (sortKey === 'verdict') {
+            return {'STRONG FIT': 1, 'CONSIDER WITH CAVEATS': 2, 'REJECT': 3}[x.verdict];
+          }
+          return 0;
+        };
+        const va = get(a), vb = get(b);
+        if (va < vb) return sortDir === 'asc' ? -1 : 1;
+        if (va > vb) return sortDir === 'asc' ? 1 : -1;
+        return 0;
+      });
+
+    tbody.innerHTML = rows.map(i => `
+      <tr>
+        <td>
+          <div class="idea-name">${esc(i.name)}${i.is_top_pick ? '<span class="top-pick-flag">★ TOP PICK</span>' : ''}<span class="pattern" title="${esc(patternLabel(i.pattern))}">Pattern ${esc(i.pattern)}</span></div>
+          <div class="one-liner">${esc(i.one_liner)}</div>
+        </td>
+        <td><span class="score">${i.demand_signal.score}</span></td>
+        <td><span class="score">${i.pain_severity.score}</span></td>
+        <td><span class="score">${i.competitive_reality.score}</span></td>
+        <td><span class="composite">${i.composite.toFixed(1)}</span></td>
+        <td><span class="score">${i.feasibility.average.toFixed(1)}</span></td>
+        <td><span class="verdict ${verdictClass(i.verdict)}">${esc(i.verdict.toLowerCase())}</span></td>
+        <td><button class="open-btn" data-id="${esc(i.id)}">Open ›</button></td>
+      </tr>
+    `).join('');
+
+    // Update sort arrows
+    $$('.ideas-table th[data-sort]').forEach(th => {
+      const arr = th.querySelector('.arrow');
+      if (!arr) return;
+      arr.textContent = th.dataset.sort === sortKey ? (sortDir === 'desc' ? '▼' : '▲') : '';
+    });
+
+    // Wire "Open" buttons
+    $$('.open-btn').forEach(b => {
+      b.addEventListener('click', () => {
+        $('#idea-picker').value = b.dataset.id;
+        renderDetail(b.dataset.id);
+        // switch to detail tab
+        $$('.tab-btn').forEach(t => t.classList.toggle('active', t.dataset.tab === 'detail'));
+        $$('.tab-pane').forEach(p => p.classList.toggle('active', p.id === 'tab-detail'));
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      });
+    });
+  }
+
+  $$('.ideas-table th[data-sort]').forEach(th => {
+    th.addEventListener('click', () => {
+      const key = th.dataset.sort;
+      if (sortKey === key) { sortDir = sortDir === 'asc' ? 'desc' : 'asc'; }
+      else { sortKey = key; sortDir = key === 'name' ? 'asc' : 'desc'; }
+      renderTable();
+    });
+  });
+  $('#search-input').addEventListener('input', renderTable);
+  $('#verdict-filter').addEventListener('change', renderTable);
+  $('#pattern-filter').addEventListener('change', renderTable);
+
+  // ===== TAB 2: DETAIL =====
+  function populatePicker() {
+    const sel = $('#idea-picker');
+    sel.innerHTML = DATA.ideas
+      .map(i => `<option value="${esc(i.id)}">${esc(i.name)}${i.is_top_pick ? ' ★' : ''}  —  ${esc(i.verdict.toLowerCase())}</option>`)
+      .join('');
+    sel.addEventListener('change', () => renderDetail(sel.value));
+  }
+
+  let chartInstance = null;
+
+  function renderDetail(id) {
+    const idea = DATA.ideas.find(i => i.id === id);
+    if (!idea) return;
+    const body = $('#detail-body');
+
+    const FEAS_ORDER = [
+      ['technical_buildability', 'Technical buildability'],
+      ['data_feasibility', 'Data feasibility'],
+      ['domain_knowledge_gap', 'Domain knowledge gap'],
+      ['sales_cycle', 'Sales cycle length'],
+      ['buyer_accessibility', 'Buyer accessibility'],
+      ['decision_maker_clarity', 'Decision-maker clarity'],
+      ['pricing_power', 'Pricing power'],
+      ['gross_margin', 'Gross margin reality'],
+      ['operating_capital', 'Operating capital'],
+      ['liability', 'Liability exposure'],
+      ['competitive_intensity', 'Competitive intensity'],
+      ['regulatory_drag', 'Regulatory drag']
+    ];
+
+    body.innerHTML = `
+      <div class="verdict-callout ${verdictCalloutClass(idea.verdict)}">
+        ${idea.is_top_pick ? '★ TOP PICK · ' : ''}${esc(idea.verdict)} · Composite ${idea.composite.toFixed(1)}/10 · Pattern ${esc(idea.pattern)} (${esc(patternLabel(idea.pattern))})
+      </div>
+
+      <div class="section">
+        <h2>What it is</h2>
+        <p style="margin:0 0 8px"><b>${esc(idea.name)}</b></p>
+        <p style="margin:0 0 6px;color:#334155">${esc(idea.one_liner)}</p>
+        <p style="margin:0;color:#64748b;font-size:12.5px"><b>Target customer:</b> ${esc(idea.target_customer)}</p>
+      </div>
+
+      <div class="section">
+        <h2>3-Metric demand validation</h2>
+        <div class="grid-3">
+          <div class="score-box demand">
+            <div class="label">Demand signal</div>
+            <div class="value">${idea.demand_signal.score}/10</div>
+            <div class="rationale">${esc(idea.demand_signal.rationale)}</div>
+          </div>
+          <div class="score-box pain">
+            <div class="label">Pain severity</div>
+            <div class="value">${idea.pain_severity.score}/10</div>
+            <div class="rationale">${esc(idea.pain_severity.rationale)}</div>
+          </div>
+          <div class="score-box comp">
+            <div class="label">Competitive reality</div>
+            <div class="value">${idea.competitive_reality.score}/10</div>
+            <div class="rationale">${esc(idea.competitive_reality.rationale)}</div>
+          </div>
+        </div>
+        <div class="score-box composite-box" style="margin-top:12px">
+          <div class="label">Composite (D×0.4 + P×0.4 + C×0.2)</div>
+          <div class="value">${idea.composite.toFixed(1)}/10 — Gate: ${esc(idea.gate)}</div>
+        </div>
+      </div>
+
+      <div class="section">
+        <h2>Reddit & forum demand quotes</h2>
+        ${idea.reddit_quotes.map(q => `
+          <div class="quote-card">
+            <div class="q">"${esc(q.quote)}"</div>
+            <div class="meta">${esc(q.source)} · upvotes: ${esc(q.upvotes)} · ${esc(q.year)} · <a href="${esc(q.url)}" target="_blank" rel="noopener">${esc(q.url)}</a></div>
+          </div>
+        `).join('')}
+      </div>
+
+      <div class="section">
+        <h2>Pain quantification ($ + hours)</h2>
+        <div class="pain-fact">
+          <div class="k">Dollar cost</div>
+          <div class="v">${esc(idea.pain_quantification.dollar_cost.value)}<br><a href="${esc(idea.pain_quantification.dollar_cost.source_url)}" target="_blank" rel="noopener">${esc(idea.pain_quantification.dollar_cost.source_url)}</a></div>
+        </div>
+        <div class="pain-fact">
+          <div class="k">Time cost</div>
+          <div class="v">${esc(idea.pain_quantification.time_cost.value)}<br><a href="${esc(idea.pain_quantification.time_cost.source_url)}" target="_blank" rel="noopener">${esc(idea.pain_quantification.time_cost.source_url)}</a></div>
+        </div>
+        <div class="pain-fact">
+          <div class="k">Visceral quote</div>
+          <div class="v">"${esc(idea.pain_quantification.visceral_quote.quote)}"<br><a href="${esc(idea.pain_quantification.visceral_quote.source_url)}" target="_blank" rel="noopener">${esc(idea.pain_quantification.visceral_quote.source_url)}</a></div>
+        </div>
+        <div class="pain-fact">
+          <div class="k">Urgency triggers</div>
+          <div class="v">${idea.pain_quantification.urgency_triggers.map(t => `• ${esc(t)}`).join('<br>')}</div>
+        </div>
+      </div>
+
+      <div class="section">
+        <h2>Competitive landscape</h2>
+        <table class="comp-table">
+          <thead><tr><th>Competitor</th><th>Funding</th><th>Est. revenue</th><th>Pricing</th><th>Top complaint</th><th>Your wedge</th></tr></thead>
+          <tbody>
+            ${idea.competitors.map(c => `
+              <tr>
+                <td><b>${esc(c.name)}</b></td>
+                <td>${esc(c.funding)}</td>
+                <td>${esc(c.est_revenue)}</td>
+                <td>${esc(c.pricing)}</td>
+                <td>${esc(c.top_complaint)}</td>
+                <td>${esc(c.wedge)}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+        <p style="margin-top:10px;font-size:13px;color:#334155"><b>Underserved gap:</b> ${esc(idea.underserved_gap)}</p>
+      </div>
+
+      <div class="section">
+        <h2>12-dimension feasibility</h2>
+        <div class="grid-2">
+          <ul class="feas-list">
+            ${FEAS_ORDER.map(([k, lbl]) => `
+              <li>
+                <span class="dim">${esc(lbl)}</span>
+                <span class="sc">${idea.feasibility[k].score}</span>
+                <span class="note">${esc(idea.feasibility[k].note)}</span>
+              </li>
+            `).join('')}
+          </ul>
+          <div>
+            <div class="chart-wrap"><canvas id="feas-chart"></canvas></div>
+            <div class="feas-avg"><span>Average</span><span>${idea.feasibility.average.toFixed(1)} / 10</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="section">
+        <h2>Brutal truths</h2>
+        <div class="grid-2">
+          <div class="truth-box">
+            <h3>✓ Certain</h3>
+            <ul class="bullets">${idea.brutal_truths.certain.map(t => `<li>${esc(t)}</li>`).join('')}</ul>
+          </div>
+          <div class="truth-box">
+            <h3>? Uncertain</h3>
+            <ul class="bullets">${idea.brutal_truths.uncertain.map(t => `<li>${esc(t)}</li>`).join('')}</ul>
+          </div>
+          <div class="truth-box">
+            <h3>☠ Kills it</h3>
+            <ul class="bullets">${idea.brutal_truths.kills_it.map(t => `<li>${esc(t)}</li>`).join('')}</ul>
+          </div>
+          <div class="truth-box">
+            <h3>⚠ Founder underestimates</h3>
+            <ul class="bullets">${idea.brutal_truths.underestimated.map(t => `<li>${esc(t)}</li>`).join('')}</ul>
+          </div>
+        </div>
+      </div>
+
+      <div class="section">
+        <h2>90-day validation plan</h2>
+        ${idea.validation_plan.map(s => `
+          <div class="plan-step"><div class="wk">${esc(s.week)}</div><div class="ax">${esc(s.action)}</div></div>
+        `).join('')}
+      </div>
+
+      <div class="section">
+        <h2>First 5 customer conversations</h2>
+        ${idea.first_5_conversations.map((c, idx) => `
+          <div class="conv-item">
+            <div class="who">${idx + 1}. ${esc(c.who)}</div>
+            <div class="where">Where: ${linkifyMaybe(c.where_to_find)}</div>
+          </div>
+        `).join('')}
+      </div>
+
+      <div class="section">
+        <h2>Kill criteria</h2>
+        <ul class="kill-list">
+          ${idea.kill_criteria.map(k => `<li>${esc(k)}</li>`).join('')}
+        </ul>
+      </div>
+
+      <div class="section">
+        <h2>Revenue path</h2>
+        <div class="revenue-callout">${esc(idea.revenue_path)}</div>
+      </div>
+    `;
+
+    // Render radar chart
+    if (chartInstance) chartInstance.destroy();
+    const ctx = document.getElementById('feas-chart').getContext('2d');
+    chartInstance = new Chart(ctx, {
+      type: 'radar',
+      data: {
+        labels: FEAS_ORDER.map(([_, l]) => l.replace(' ', '\n')),
+        datasets: [{
+          label: idea.name,
+          data: FEAS_ORDER.map(([k]) => idea.feasibility[k].score),
+          backgroundColor: 'rgba(16, 185, 129, 0.15)',
+          borderColor: '#10b981',
+          borderWidth: 2,
+          pointBackgroundColor: '#10b981',
+          pointRadius: 3
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: { legend: { display: false } },
+        scales: {
+          r: {
+            min: 0,
+            max: 10,
+            ticks: { stepSize: 2, color: '#94a3b8', backdropColor: 'transparent', font: { size: 9 } },
+            pointLabels: { font: { size: 9 }, color: '#475569' },
+            grid: { color: '#e2e8f0' },
+            angleLines: { color: '#e2e8f0' }
+          }
+        }
+      }
+    });
+  }
+
+  function linkifyMaybe(s) {
+    const m = String(s).match(/(https?:\/\/[^\s)]+)/);
+    if (m) return esc(s).replace(esc(m[1]), `<a href="${esc(m[1])}" target="_blank" rel="noopener">${esc(m[1])}</a>`);
+    return esc(s);
+  }
+
+  // ===== INIT =====
+  renderSummary();
+  renderTopPickBanner();
+  renderTable();
+  populatePicker();
+  renderDetail(DATA.ideas.find(i => i.is_top_pick)?.id || DATA.ideas[0].id);
+</script>
+</body>
+</html>
